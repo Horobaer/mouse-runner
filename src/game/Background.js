@@ -1,0 +1,86 @@
+class Layer {
+    constructor(game, width, height, speedModifier, color, type) {
+        this.game = game;
+        this.width = width;
+        this.height = height;
+        this.speedModifier = speedModifier;
+        this.color = color;
+        this.type = type; // 'mountains', 'hills', 'clouds'
+        this.x = 0;
+        this.y = 0;
+    }
+
+    update(gameSpeed) {
+        this.speed = gameSpeed * this.speedModifier;
+        this.x -= this.speed;
+        if (this.x <= -this.width) {
+            this.x = 0;
+        }
+    }
+
+    draw(context) {
+        context.fillStyle = this.color;
+
+        // We draw the layer twice to create seamless scrolling
+        this.drawShape(context, this.x);
+        this.drawShape(context, this.x + this.width);
+    }
+
+    drawShape(context, xOffset) {
+        context.beginPath();
+        if (this.type === 'mountains') {
+            context.moveTo(xOffset, this.height);
+            context.lineTo(xOffset + this.width * 0.2, this.height - 200);
+            context.lineTo(xOffset + this.width * 0.4, this.height - 100);
+            context.lineTo(xOffset + this.width * 0.6, this.height - 250);
+            context.lineTo(xOffset + this.width * 0.8, this.height - 150);
+            context.lineTo(xOffset + this.width, this.height);
+        } else if (this.type === 'hills') {
+            context.moveTo(xOffset, this.height);
+            context.bezierCurveTo(xOffset + this.width / 4, this.height - 150,
+                xOffset + this.width / 2, this.height - 50,
+                xOffset + this.width, this.height);
+        } else if (this.type === 'clouds') {
+            // Draw a few clouds at specific positions
+            this.drawCloud(context, xOffset + 100, 100);
+            this.drawCloud(context, xOffset + 400, 150);
+            this.drawCloud(context, xOffset + 800, 80);
+            return; // Clouds don't fill bottom
+        }
+        context.lineTo(xOffset + this.width, this.height);
+        context.lineTo(xOffset, this.height);
+        context.fill();
+    }
+
+    drawCloud(context, x, y) {
+        context.beginPath();
+        context.arc(x, y, 30, 0, Math.PI * 2);
+        context.arc(x + 25, y - 10, 35, 0, Math.PI * 2);
+        context.arc(x + 50, y, 30, 0, Math.PI * 2);
+        context.fill();
+    }
+}
+
+export default class Background {
+    constructor(game) {
+        this.game = game;
+        this.width = game.width;
+        this.height = game.height;
+        this.layers = [];
+
+        // Add layers
+        // Sky is drawn in update loop of World or here, we can just fill rect.
+
+        this.layers.push(new Layer(game, this.width, this.height, 0.2, '#E0F7FA', 'clouds')); // Clouds
+        this.layers.push(new Layer(game, this.width, this.height, 0.1, '#B2EBF2', 'mountains')); // Mountains
+        this.layers.push(new Layer(game, this.width, this.height, 0.5, '#4DB6AC', 'hills')); // Hills
+    }
+
+    update(speed) {
+        this.layers.forEach(layer => layer.update(speed));
+    }
+
+    draw(context) {
+        this.layers.forEach(layer => layer.draw(context));
+    }
+}
