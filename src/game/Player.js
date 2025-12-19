@@ -18,7 +18,7 @@ export default class Player extends Entity {
 
     update(deltaTime) {
         // Jumping (Multi-jump / Flappy style)
-        if (this.game.input.isPressed('Space')) {
+        if (this.game.input.didJump()) {
             this.vy = this.jumpStrength;
             this.grounded = false;
         }

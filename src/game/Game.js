@@ -70,7 +70,7 @@ export default class Game {
 
             // Check for Space to Restart (only if cooldown over)
             const nameInput = document.getElementById('player-name');
-            if (this.restartCooldown <= 0 && this.input.isPressed('Space') && document.activeElement !== nameInput) {
+            if (this.restartCooldown <= 0 && this.input.didJump() && document.activeElement !== nameInput) {
                 if (!this.scoreSubmitted) {
                     this.handleScoreSubmission();
                 } else {
@@ -409,9 +409,9 @@ export default class Game {
             const dateStr = entry.date ? new Date(entry.date).toLocaleString() : '';
             div.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span style="flex: 1; text-align: left;">#${index + 1} <strong>${entry.name}</strong> (Lvl ${lvl})</span>
-                    <span style="flex: 1; text-align: center; font-size: 0.85em; color: #ccc;">${dateStr}</span>
-                    <span style="flex: 1; text-align: right;">${entry.time}s | 🧀 ${cheese}</span>
+                    <span style="flex: 2; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">#${index + 1} <strong>${entry.name}</strong></span>
+                    <span style="flex: 1; text-align: center;">🆙 ${lvl}</span>
+                    <span style="flex: 1.5; text-align: right;">⏱️ ${entry.time}s | 🧀 ${cheese}</span>
                 </div>
             `;
             container.appendChild(div);

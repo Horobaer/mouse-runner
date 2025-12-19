@@ -27,13 +27,25 @@ export default class InputHandler {
         });
 
         // Also support touch for mobile check (basic)
-        window.addEventListener('touchstart', () => {
-            this.keys.add('Space'); // Treat touch as jump
+        window.addEventListener('touchstart', (e) => {
+            // Prevent default to avoid scrolling/zooming on rapid taps
+            if (e.target.tagName === 'CANVAS') {
+                e.preventDefault();
+            }
+            this.keys.add('Space'); // Keep Space mapping for compatibility
             this.keysJustPressed.add('Space');
+
+            // Register a specific touch inputs if we want to separate them later
+            this.keys.add('Touch');
+            this.keysJustPressed.add('Touch');
+
             this.mouse.clicked = true;
-        });
-        window.addEventListener('touchend', () => {
+        }, { passive: false });
+
+        window.addEventListener('touchend', (e) => {
+            // e.preventDefault(); // Sometimes needed, but passive defaults are complex
             this.keys.delete('Space');
+            this.keys.delete('Touch');
         });
     }
 
@@ -41,14 +53,18 @@ export default class InputHandler {
         return this.keys.has(code);
     }
 
-    // Check if key was pressed exactly this frame (consumer must reset/it auto resets via logic if we wanted, but let's clear it manually or use a frame cleaner?)
-    // Actually, simpler: make isPressed consume the event like isClicked
+    // Check if key was pressed exactly this frame
     isPressed(code) {
         if (this.keysJustPressed.has(code)) {
             this.keysJustPressed.delete(code);
             return true;
         }
         return false;
+    }
+
+    // Abstract method to check for any jump input (Space or Touch)
+    didJump() {
+        return this.isPressed('Space') || this.isPressed('Touch') || this.isClicked();
     }
 
     // Check if clicked exactly this frame (consumer must reset)
