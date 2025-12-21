@@ -42,6 +42,9 @@ export default class Game {
         this.level = 1;
         this.levelTimer = 0;
         this.levelDuration = 10000; // 10 seconds
+
+        // Lives System
+        this.lives = 2; // Start with 2 lives
     }
 
     start() {
@@ -137,6 +140,10 @@ export default class Game {
         this.enemies = [];
         this.cheeses = [];
         this.cheeseCount = 0;
+        this.cheeses = [];
+        this.cheeseCount = 0;
+        this.lives = 2;
+        this.projectiles = [];
         this.projectiles = [];
         this.player = new Player(this);
         this.world = new World(this);
@@ -217,7 +224,13 @@ export default class Game {
             enemy.update(deltaTime);
             // Collision with Player
             if (this.checkCollision(this.player, enemy)) {
-                this.gameOver = true;
+                if (!this.player.isInvulnerable) {
+                    this.lives--;
+                    this.player.hurt();
+                    if (this.lives <= 0) {
+                        this.gameOver = true;
+                    }
+                }
             }
             // Collision with Projectiles
             this.projectiles.forEach(projectile => {
@@ -277,6 +290,12 @@ export default class Game {
             cheeseEl.innerText = '🧀 ' + this.cheeseCount;
             cheeseEl.classList.remove('hidden');
         }
+
+
+        const livesEl = document.getElementById('lives');
+        if (livesEl) {
+            livesEl.innerText = 'Lives: ' + '❤️'.repeat(this.lives);
+        }
     }
 
     showLeaderboard() {
@@ -288,73 +307,39 @@ export default class Game {
         const nameInput = document.getElementById('player-name');
 
         leaderboardEl.classList.remove('hidden');
-        restartBtn.classList.add('hidden'); // Hide restart until name submitted or skipped
-        inputContainer.classList.remove('hidden');
+        restartBtn.classList.remove('hidden'); // allow restart immediately
+        inputContainer.classList.add('hidden'); // hidden by default since we auto-submit
 
         const currentPlayerEl = document.getElementById('current-player');
         if (currentPlayerEl) currentPlayerEl.classList.add('hidden');
 
+        // Pre-fill Name (or generate) and Auto-Submit
+        let name = localStorage.getItem('mouse_adventure_username');
+        if (!name) {
+            name = this.getRandomMouseName();
+            localStorage.setItem('mouse_adventure_username', name);
+        }
+        nameInput.value = name; // Just in case we show it later
+
+        // Add score immediately
+        const idx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount);
+
         // Show Celebration
         const celebrationEl = document.getElementById('celebration-msg');
         if (celebrationEl) {
-            const timeVal = parseFloat((this.gameTime / 1000).toFixed(1));
-            const cheeseVal = this.cheeseCount || 0;
-            const scores = this.leaderboard.getScores();
-            let rank = 1;
-
-            // Calculate Rank based on Cheese Descending, Time Descending
-            for (const s of scores) {
-                const sCheese = s.cheese || 0;
-                const sTime = parseFloat(s.time);
-
-                // If existing score is better, push me down rankings
-                // Better = More cheese, OR same cheese and More time
-                if (sCheese > cheeseVal) {
-                    rank++;
-                } else if (sCheese === cheeseVal && sTime > timeVal) {
-                    rank++;
-                }
-            }
-
-            const timeStr = timeVal.toFixed(1) + 's';
-            // Use the same structure as the submit handler (slimmer, one line)
-            celebrationEl.innerHTML = `GAME OVER<br><span style="font-size: 0.6em">Rank #${rank} • Level ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}</span>`;
+            const rank = idx + 1;
+            const timeStr = (this.gameTime / 1000).toFixed(1) + 's';
+            celebrationEl.innerHTML = `RANK #${rank}<br>Level ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}`;
             celebrationEl.classList.remove('hidden');
         }
 
-        // Pre-fill Name
-        const storedName = localStorage.getItem('mouse_adventure_username');
-        if (storedName) {
-            nameInput.value = storedName;
-        } else {
-            nameInput.value = this.getRandomMouseName();
-        }
-
         // Render List
-        this.renderLeaderboardList(listEl);
+        this.renderLeaderboardList(listEl, idx);
 
-        // Handle Submit
-        submitBtn.onclick = () => {
-            const name = nameInput.value || this.getRandomMouseName();
-            localStorage.setItem('mouse_adventure_username', name);
-            // Add score and get the index of the new entry
-            const index = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount);
-            // Render list with the new index highlighted
-            this.renderLeaderboardList(listEl, index);
+        this.scoreSubmitted = true; // Mark as done
 
-            // Update Celebration with Rank
-            if (celebrationEl) {
-                const rank = index + 1;
-                const timeStr = (this.gameTime / 1000).toFixed(1) + 's';
-                celebrationEl.innerHTML = `RANK #${rank}<br>Level ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}`;
-            }
-
-            inputContainer.classList.add('hidden');
-            restartBtn.classList.remove('hidden');
-
-            // Flag as submitted so Space key restarts
-            this.scoreSubmitted = true;
-        };
+        // Remove redundant submit listener usage or keep it minimal
+        submitBtn.onclick = null;
 
         // Handle Restart Click
         restartBtn.onclick = () => {

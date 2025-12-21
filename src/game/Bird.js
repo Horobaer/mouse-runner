@@ -4,7 +4,8 @@ export default class Bird extends Entity {
     constructor(game) {
         // Random Y position in the upper half of the screen
         const y = Math.random() * (game.height * 0.5);
-        super(game, game.width, y, 40, 30);
+        // Reference size: 60x45
+        super(game, game.width, y, 60, 45);
         this.speedX = -Math.random() * 3 - 4; // Faster than minimal enemies
         this.speedY = Math.random() * 2 - 1; // Slight vertical bobbing
         this.markedForDeletion = false;

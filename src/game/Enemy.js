@@ -2,7 +2,9 @@ import Entity from './Entities.js';
 
 export default class Enemy extends Entity {
     constructor(game) {
-        super(game, game.width, game.height - 50 - 50, 50, 50); // Start off-screen right
+        // Reference size: 75x75. Y needs to be strictly on ground.
+        // Game height - ground(50) - enemyHeight(75)
+        super(game, game.width, game.height - 50 - 75, 75, 75);
         this.speedX = -Math.random() * 4 - 3; // Random speed between -3 and -7
         this.markedForDeletion = false;
         this.color = '#8B0000'; // Dark Red

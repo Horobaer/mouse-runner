@@ -9,9 +9,10 @@ export default class Cheese extends Entity {
         const jumpHeight = 150;
         const y = groundY - 50 - Math.random() * jumpHeight * 1.5;
 
-        super(game, game.width, y, 40, 40);
+        // Reference size: 60x60
+        super(game, game.width, y, 60, 60);
         this.vx = -this.game.world.speed;
-        this.image = null; // Could add sprite later
+        this.image = null;
     }
 
     update(deltaTime) {
