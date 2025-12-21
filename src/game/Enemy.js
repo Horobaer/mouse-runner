@@ -11,7 +11,7 @@ export default class Enemy extends Entity {
     }
 
     update(deltaTime) {
-        this.x += this.speedX + -this.game.world.speed * 0.5; // Move left + world scroll effect (pseudo)
+        this.x -= this.game.world.speed; // Move exactly with world speed (static on ground)
 
         // Actually since the world "scrolls", the enemies should just move left relative to camera
         // But in this simple engine, the world scroll is visual. 

@@ -45,17 +45,45 @@ export default class Game {
 
         // Lives System
         this.lives = 2; // Start with 2 lives
+        this.started = false;
     }
 
     start() {
-        this.animate(0);
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const startInput = document.getElementById('start-player-name');
+
+        // Pre-fill name
+        const storedName = localStorage.getItem('mouse_adventure_username');
+        if (storedName) startInput.value = storedName;
+
+        startBtn.onclick = () => {
+            const name = startInput.value || this.getRandomMouseName();
+            localStorage.setItem('mouse_adventure_username', name);
+
+            // Update HUD
+            const playerEl = document.getElementById('current-player');
+            if (playerEl) {
+                playerEl.innerText = 'Player: ' + name;
+                playerEl.classList.remove('hidden');
+            }
+
+            // Also update the game-over/leaderboard input for consistency
+            const endInput = document.getElementById('player-name');
+            if (endInput) endInput.value = name;
+
+            this.started = true;
+            startScreen.classList.add('hidden');
+            this.animate(0);
+        };
     }
 
     animate(timeStamp) {
         const deltaTime = timeStamp - this.lastTime;
         this.lastTime = timeStamp;
 
-        if (!this.gameOver) {
+        // Run loop if game is running OR if it hasn't started (demo mode)
+        if (!this.gameOver || !this.started) {
             this.update(deltaTime);
             this.draw();
             requestAnimationFrame(this.animate.bind(this));
@@ -73,10 +101,9 @@ export default class Game {
 
             // Check for Space to Restart (only if cooldown over)
             const nameInput = document.getElementById('player-name');
+            // Allow restarting with Space if we are done with submission logic
             if (this.restartCooldown <= 0 && this.input.didJump() && document.activeElement !== nameInput) {
-                if (!this.scoreSubmitted) {
-                    this.handleScoreSubmission();
-                } else {
+                if (this.scoreSubmitted) {
                     this.handleGlobalRestart();
                 }
             }
@@ -84,18 +111,12 @@ export default class Game {
     }
 
     handleGlobalRestart() {
-        // Find the submit logic and trigger it from here
-        const nameInput = document.getElementById('player-name');
-        const listEl = document.getElementById('leaderboard-list');
-        const inputContainer = document.getElementById('name-input-container');
+        // Reuse stored name logic
         const leaderboardEl = document.getElementById('leaderboard');
+        const inputContainer = document.getElementById('name-input-container');
 
-        // Auto-submit current name (or random) logic
-        const name = nameInput.value || this.getRandomMouseName();
-        localStorage.setItem('mouse_adventure_username', name); // Persist name
-        this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount);
-
-        // Hide UI
+        // We already submitted, so we just restart
+        // Ensure UI is hidden
         inputContainer.classList.add('hidden');
         leaderboardEl.classList.add('hidden');
 
@@ -166,9 +187,18 @@ export default class Game {
     }
 
     update(deltaTime) {
+        // --- BACKGROUND SCENERY MODE ---
+        if (!this.started) {
+            this.level = 1;
+            this.levelTimer = 0;
+            this.world.speed = 6;
+            this.lives = 2;
+            // No Player Update, No AI, Just Scrolling
+        }
+
         // Level Progression
         this.levelTimer += deltaTime;
-        if (this.levelTimer > this.levelDuration) {
+        if (this.started && this.levelTimer > this.levelDuration) {
             this.level++;
             this.levelTimer = 0;
             // Increase Difficulty
@@ -184,10 +214,12 @@ export default class Game {
         }
 
         // Time Scoring
-        this.gameTime += deltaTime;
+        if (this.started) {
+            this.gameTime += deltaTime;
+            this.player.update(deltaTime); // Only update player if game started
+        }
 
         this.world.update(deltaTime);
-        this.player.update(deltaTime);
 
         // Handle Projectiles
         this.projectiles.forEach(projectile => {
@@ -223,12 +255,14 @@ export default class Game {
         this.enemies.forEach(enemy => {
             enemy.update(deltaTime);
             // Collision with Player
-            if (this.checkCollision(this.player, enemy)) {
-                if (!this.player.isInvulnerable) {
-                    this.lives--;
-                    this.player.hurt();
-                    if (this.lives <= 0) {
-                        this.gameOver = true;
+            if (this.started) {
+                if (this.checkCollision(this.player, enemy)) {
+                    if (!this.player.isInvulnerable) {
+                        this.lives--;
+                        this.player.hurt();
+                        if (this.lives <= 0) {
+                            this.gameOver = true;
+                        }
                     }
                 }
             }
@@ -268,7 +302,10 @@ export default class Game {
     draw() {
         this.context.clearRect(0, 0, this.width, this.height);
         this.world.draw(this.context);
-        this.player.draw(this.context);
+
+        if (this.started) {
+            this.player.draw(this.context);
+        }
 
         this.projectiles.forEach(projectile => {
             projectile.draw(this.context);
