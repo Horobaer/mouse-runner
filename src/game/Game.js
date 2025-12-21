@@ -55,7 +55,7 @@ export default class Game {
 
         // Pre-fill name
         const storedName = localStorage.getItem('mouse_adventure_username');
-        if (storedName) startInput.value = storedName;
+        startInput.value = storedName || "Cheesy McRun";
 
         startBtn.onclick = () => {
             const name = startInput.value || this.getRandomMouseName();
@@ -74,8 +74,16 @@ export default class Game {
 
             this.started = true;
             startScreen.classList.add('hidden');
-            this.animate(0);
+            // Loop is already running, no need to call animate again if we just flip the flag?
+            // Actually, keep calling it or let the loop picking up the flag handle it?
+            // The loop uses requestAnimationFrame. If we are running, we don't need to call it again.
+            // But if we want to be safe or if the loop stopped (it shouldn't), we can leave it.
+            // Better to NOT call it again if it's running.
+            // However, with `animate` using RAF, it's safer to just rely on the existing loop picking up `started = true`.
         };
+
+        // Start the background scenery loop
+        this.animate(0);
     }
 
     animate(timeStamp) {
