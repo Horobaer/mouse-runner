@@ -61,10 +61,43 @@ export default class Game {
             const name = startInput.value || this.getRandomMouseName();
             localStorage.setItem('mouse_adventure_username', name);
 
+            // Difficulty Logic
+            const difficultyEls = document.getElementsByName('difficulty');
+            let difficulty = 'hard';
+            for (const el of difficultyEls) {
+                if (el.checked) {
+                    difficulty = el.value;
+                    break;
+                }
+            }
+
+            // Hard starts with current speed (6)
+            // Moderate starts with 65% of hard speed
+            // Easy starts with 30% of hard speed
+            const HARD_SPEED = 6;
+            // Base Glide Duration (Hard)
+            let glideDuration = 1000;
+
+            if (difficulty === 'hard') {
+                this.baseSpeed = HARD_SPEED;
+                glideDuration = 1000;
+            } else if (difficulty === 'moderate') {
+                this.baseSpeed = HARD_SPEED * 0.65;
+                glideDuration = 1000 + 1500;
+            } else if (difficulty === 'easy') {
+                this.baseSpeed = HARD_SPEED * 0.3;
+                glideDuration = 1000 + 2500;
+            }
+            this.difficulty = difficulty;
+            this.player.maxGlideTime = glideDuration;
+
+            // Apply immediately
+            this.world.speed = this.baseSpeed;
+
             // Update HUD
             const playerEl = document.getElementById('current-player');
             if (playerEl) {
-                playerEl.innerText = 'Player: ' + name;
+                playerEl.innerText = 'Player: ' + name + ' (' + difficulty.toUpperCase() + ')';
                 playerEl.classList.remove('hidden');
             }
 
@@ -74,12 +107,8 @@ export default class Game {
 
             this.started = true;
             startScreen.classList.add('hidden');
-            // Loop is already running, no need to call animate again if we just flip the flag?
-            // Actually, keep calling it or let the loop picking up the flag handle it?
-            // The loop uses requestAnimationFrame. If we are running, we don't need to call it again.
-            // But if we want to be safe or if the loop stopped (it shouldn't), we can leave it.
-            // Better to NOT call it again if it's running.
-            // However, with `animate` using RAF, it's safer to just rely on the existing loop picking up `started = true`.
+
+            // Allow music to start if user interaction happened
         };
 
         // Start the background scenery loop
@@ -144,7 +173,7 @@ export default class Game {
         localStorage.setItem('mouse_adventure_username', name);
 
         // Add Score and get Index
-        const highlightIdx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount);
+        const highlightIdx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount, this.difficulty);
 
         // Re-render with highlight
         this.renderLeaderboardList(listEl, highlightIdx);
@@ -164,7 +193,7 @@ export default class Game {
         this.gameTime = 0;
         this.level = 1;
         this.levelTimer = 0;
-        this.world.speed = 6; // Reset speed
+        this.world.speed = this.baseSpeed || 6; // Reset speed to chosen difficulty
         this.enemyInterval = 2000;
         this.enemies = [];
         this.cheeses = [];
@@ -175,6 +204,11 @@ export default class Game {
         this.projectiles = [];
         this.projectiles = [];
         this.player = new Player(this);
+        // Restore difficulty settings (Speed is handled above, but glide time needs re-applying)
+        if (this.difficulty === 'moderate') this.player.maxGlideTime = 2500;
+        else if (this.difficulty === 'easy') this.player.maxGlideTime = 3500;
+        else this.player.maxGlideTime = 1000; // Hard/Default
+
         this.world = new World(this);
         this.lastTime = performance.now();
 
@@ -367,7 +401,7 @@ export default class Game {
         nameInput.value = name; // Just in case we show it later
 
         // Add score immediately
-        const idx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount);
+        const idx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount, this.difficulty);
 
         // Show Celebration
         const celebrationEl = document.getElementById('celebration-msg');
@@ -436,10 +470,12 @@ export default class Game {
             }
             const lvl = entry.level || 1;
             const cheese = entry.cheese || 0;
-            const dateStr = entry.date ? new Date(entry.date).toLocaleString() : '';
+            const diff = entry.difficulty || 'hard';
+            const diffIcon = diff === 'easy' ? '🟢' : (diff === 'moderate' ? '🟠' : '🔴');
+
             div.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span style="flex: 2; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">#${index + 1} <strong>${entry.name}</strong></span>
+                    <span style="flex: 2; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">#${index + 1} ${diffIcon} <strong>${entry.name}</strong></span>
                     <span style="flex: 1; text-align: center;">🆙 ${lvl}</span>
                     <span style="flex: 1.5; text-align: right;">⏱️ ${entry.time}s | 🧀 ${cheese}</span>
                 </div>

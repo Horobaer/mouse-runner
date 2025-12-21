@@ -3,9 +3,9 @@ export default class Leaderboard {
         this.scores = JSON.parse(localStorage.getItem('mouse_adventure_scores')) || [];
     }
 
-    addScore(name, time, level, cheese) {
+    addScore(name, time, level, cheese, difficulty) {
         const id = Date.now() + Math.random();
-        this.scores.push({ name, time, level, cheese, date: new Date().toISOString(), id });
+        this.scores.push({ name, time, level, cheese, difficulty: difficulty || 'hard', date: new Date().toISOString(), id });
         // Sort by Cheese Descending (primary), Time Descending (secondary)
         this.scores.sort((a, b) => {
             if (a.cheese !== b.cheese) {

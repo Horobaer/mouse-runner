@@ -56,12 +56,16 @@ export default class Player extends Entity {
             this.vy = 0;
             this.glideTimer = 0;
         } else {
-            // If holding space and falling?
-            if (this.vy > 0 && this.game.input.isDown('Space')) {
+            // If holding space, falling, AND within glide time limit
+            if (this.vy > 0 && this.game.input.isDown('Space') && this.glideTimer < (this.maxGlideTime || 1000)) {
                 this.vy = 3; // Slow fall
                 this.isGliding = true;
+                this.glideTimer += deltaTime;
             } else {
                 this.vy += this.weight;
+                // If we run out of glide time, we don't reset it until grounded, 
+                // but we might want to ensure we don't accidentally glide if we tap space again?
+                // The check `this.glideTimer < max` handles it.
             }
         }
 
