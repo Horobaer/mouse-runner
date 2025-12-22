@@ -10,13 +10,33 @@
 <body>
   <div id="app">
     <div id="ui-layer">
-      <div id="score">Score: 0</div>
-      <div id="cheese-count" class="hidden">🧀 0</div>
+      <div id="score">Time: 0.0s</div>
+      <div id="cheese-count" class="">🧀 0</div>
       <div id="current-player" class="hidden">Player: </div>
+      <div id="lives">Lives: 3</div>
       <div id="level">Level: 1</div>
     </div>
+    <div id="start-screen">
+      <h1>Mouse Adventure</h1>
+      <p>Enter your name to start:</p>
+      <input type="text" id="start-player-name" placeholder="Mouse Name" maxlength="10">
+      <button id="start-btn">Start Game</button>
+
+      <div id="difficulty-selection">
+        <label>
+          <input type="radio" name="difficulty" value="hard" checked> Hard
+        </label>
+        <label>
+          <input type="radio" name="difficulty" value="moderate"> Moderate
+        </label>
+        <label>
+          <input type="radio" name="difficulty" value="easy"> Easy
+        </label>
+      </div>
+    </div>
     <div id="leaderboard" class="hidden">
-      <div id="celebration-msg" class="hidden"></div>
+      <div id="celebration-msg" class="hidden">GAME OVER<br><span style="font-size: 0.6em">Rank # -- • Level 1 • --s •
+          🧀 0</span></div>
       <h2>Leaderboard</h2>
       <div id="leaderboard-list"></div>
       <div id="name-input-container">

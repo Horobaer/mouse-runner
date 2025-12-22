@@ -29,6 +29,9 @@ class Layer {
     drawShape(context, xOffset) {
         context.beginPath();
         if (this.type === 'mountains') {
+            // Reference:
+            // moveTo(i, height)
+            // lineTo(i+width*.2, height-200) ...
             context.moveTo(xOffset, this.height);
             context.lineTo(xOffset + this.width * 0.2, this.height - 200);
             context.lineTo(xOffset + this.width * 0.4, this.height - 100);
@@ -36,16 +39,21 @@ class Layer {
             context.lineTo(xOffset + this.width * 0.8, this.height - 150);
             context.lineTo(xOffset + this.width, this.height);
         } else if (this.type === 'hills') {
+            // Reference:
+            // bezierCurveTo(i+width/4, height-150, i+width/2, height-50, i+width, height)
             context.moveTo(xOffset, this.height);
-            context.bezierCurveTo(xOffset + this.width / 4, this.height - 150,
+            context.bezierCurveTo(
+                xOffset + this.width / 4, this.height - 150,
                 xOffset + this.width / 2, this.height - 50,
-                xOffset + this.width, this.height);
+                xOffset + this.width, this.height
+            );
         } else if (this.type === 'clouds') {
-            // Draw a few clouds at specific positions
+            // Reference:
+            // drawCloud(i+100, 100), (i+400, 150), (i+800, 80)
             this.drawCloud(context, xOffset + 100, 100);
             this.drawCloud(context, xOffset + 400, 150);
             this.drawCloud(context, xOffset + 800, 80);
-            return; // Clouds don't fill bottom
+            return;
         }
         context.lineTo(xOffset + this.width, this.height);
         context.lineTo(xOffset, this.height);

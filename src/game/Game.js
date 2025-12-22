@@ -7,7 +7,6 @@ import Enemy from './Enemy.js';
 import Bird from './Bird.js';
 import Cheese from './Cheese.js';
 import Leaderboard from './Leaderboard.js';
-import Cat from './Cat.js';
 
 export default class Game {
     constructor(canvas) {
@@ -43,18 +42,85 @@ export default class Game {
         this.level = 1;
         this.levelTimer = 0;
         this.levelDuration = 10000; // 10 seconds
+
+        // Lives System
+        this.lives = 2; // Start with 2 lives
+        this.started = false;
     }
 
     start() {
-        this.lastTime = performance.now();
-        this.animate(this.lastTime);
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const startInput = document.getElementById('start-player-name');
+
+        // Pre-fill name
+        const storedName = localStorage.getItem('mouse_adventure_username');
+        startInput.value = storedName || "Cheesy McRun";
+
+        startBtn.onclick = () => {
+            const name = startInput.value || this.getRandomMouseName();
+            localStorage.setItem('mouse_adventure_username', name);
+
+            // Difficulty Logic
+            const difficultyEls = document.getElementsByName('difficulty');
+            let difficulty = 'hard';
+            for (const el of difficultyEls) {
+                if (el.checked) {
+                    difficulty = el.value;
+                    break;
+                }
+            }
+
+            // Hard starts with current speed (6)
+            // Moderate starts with 65% of hard speed
+            // Easy starts with 30% of hard speed
+            const HARD_SPEED = 6;
+            // Base Glide Duration (Hard)
+            let glideDuration = 1000;
+
+            if (difficulty === 'hard') {
+                this.baseSpeed = HARD_SPEED;
+                glideDuration = 1000;
+            } else if (difficulty === 'moderate') {
+                this.baseSpeed = HARD_SPEED * 0.65;
+                glideDuration = 1000 + 1500;
+            } else if (difficulty === 'easy') {
+                this.baseSpeed = HARD_SPEED * 0.3;
+                glideDuration = 1000 + 2500;
+            }
+            this.difficulty = difficulty;
+            this.player.maxGlideTime = glideDuration;
+
+            // Apply immediately
+            this.world.speed = this.baseSpeed;
+
+            // Update HUD
+            const playerEl = document.getElementById('current-player');
+            if (playerEl) {
+                playerEl.innerText = 'Player: ' + name + ' (' + difficulty.toUpperCase() + ')';
+                playerEl.classList.remove('hidden');
+            }
+
+            // Also update the game-over/leaderboard input for consistency
+            const endInput = document.getElementById('player-name');
+            if (endInput) endInput.value = name;
+
+            this.started = true;
+            startScreen.classList.add('hidden');
+
+            // Allow music to start if user interaction happened
+        };
+
+        // Start the background scenery loop
+        this.animate(0);
     }
 
     animate(timeStamp) {
         const deltaTime = timeStamp - this.lastTime;
         this.lastTime = timeStamp;
 
-        if (!this.gameOver) {
+        // Run loop if game is running OR if it hasn't started (demo mode)
+        if (!this.gameOver || !this.started) {
             this.update(deltaTime);
             this.draw();
             requestAnimationFrame(this.animate.bind(this));
@@ -72,10 +138,9 @@ export default class Game {
 
             // Check for Space to Restart (only if cooldown over)
             const nameInput = document.getElementById('player-name');
+            // Allow restarting with Space if we are done with submission logic
             if (this.restartCooldown <= 0 && this.input.didJump() && document.activeElement !== nameInput) {
-                if (!this.scoreSubmitted) {
-                    this.handleScoreSubmission();
-                } else {
+                if (this.scoreSubmitted) {
                     this.handleGlobalRestart();
                 }
             }
@@ -83,18 +148,12 @@ export default class Game {
     }
 
     handleGlobalRestart() {
-        // Find the submit logic and trigger it from here
-        const nameInput = document.getElementById('player-name');
-        const listEl = document.getElementById('leaderboard-list');
-        const inputContainer = document.getElementById('name-input-container');
+        // Reuse stored name logic
         const leaderboardEl = document.getElementById('leaderboard');
+        const inputContainer = document.getElementById('name-input-container');
 
-        // Auto-submit current name (or random) logic
-        const name = nameInput.value || this.getRandomMouseName();
-        localStorage.setItem('mouse_adventure_username', name); // Persist name
-        this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount);
-
-        // Hide UI
+        // We already submitted, so we just restart
+        // Ensure UI is hidden
         inputContainer.classList.add('hidden');
         leaderboardEl.classList.add('hidden');
 
@@ -114,7 +173,7 @@ export default class Game {
         localStorage.setItem('mouse_adventure_username', name);
 
         // Add Score and get Index
-        const highlightIdx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount);
+        const highlightIdx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount, this.difficulty);
 
         // Re-render with highlight
         this.renderLeaderboardList(listEl, highlightIdx);
@@ -134,13 +193,22 @@ export default class Game {
         this.gameTime = 0;
         this.level = 1;
         this.levelTimer = 0;
-        this.world.speed = 12; // Reset speed
+        this.world.speed = this.baseSpeed || 6; // Reset speed to chosen difficulty
         this.enemyInterval = 2000;
         this.enemies = [];
         this.cheeses = [];
         this.cheeseCount = 0;
+        this.cheeses = [];
+        this.cheeseCount = 0;
+        this.lives = 2;
+        this.projectiles = [];
         this.projectiles = [];
         this.player = new Player(this);
+        // Restore difficulty settings (Speed is handled above, but glide time needs re-applying)
+        if (this.difficulty === 'moderate') this.player.maxGlideTime = 2500;
+        else if (this.difficulty === 'easy') this.player.maxGlideTime = 3500;
+        else this.player.maxGlideTime = 1000; // Hard/Default
+
         this.world = new World(this);
         this.lastTime = performance.now();
 
@@ -161,9 +229,18 @@ export default class Game {
     }
 
     update(deltaTime) {
+        // --- BACKGROUND SCENERY MODE ---
+        if (!this.started) {
+            this.level = 1;
+            this.levelTimer = 0;
+            this.world.speed = 6;
+            this.lives = 2;
+            // No Player Update, No AI, Just Scrolling
+        }
+
         // Level Progression
         this.levelTimer += deltaTime;
-        if (this.levelTimer > this.levelDuration) {
+        if (this.started && this.levelTimer > this.levelDuration) {
             this.level++;
             this.levelTimer = 0;
             // Increase Difficulty
@@ -179,10 +256,12 @@ export default class Game {
         }
 
         // Time Scoring
-        this.gameTime += deltaTime;
+        if (this.started) {
+            this.gameTime += deltaTime;
+            this.player.update(deltaTime); // Only update player if game started
+        }
 
         this.world.update(deltaTime);
-        this.player.update(deltaTime);
 
         // Handle Projectiles
         this.projectiles.forEach(projectile => {
@@ -193,35 +272,23 @@ export default class Game {
         // Handle Enemies (Spikes and Birds)
         if (this.enemyTimer > this.enemyInterval) {
             // Random chance to spawn Bird or Ground Enemy
-            // Level 3+: Chance for Cat
-
-            // Dynamic Difficulty based on Cheese
-            // As cheese count goes up:
-            // 1. Cats and Birds become more frequent (thresholds lower)
-            // 2. Spawns happen faster (interval decreases)
-
-            let catThreshold = 0.7 - (this.cheeseCount * 0.01);
-            if (catThreshold < 0.3) catThreshold = 0.3; // Cap at 70% chance
-
-            // Aggressive Bird increase:
-            // Starts at 0.4. Decreases by 0.02 per cheese.
-            // 10 cheese => 0.2 threshold (80% chance if not cat)
-            // 20 cheese => 0.05 threshold (almost guaranteed if not cat)
-            let birdThreshold = 0.4 - (this.cheeseCount * 0.03);
-            if (birdThreshold < 0.05) birdThreshold = 0.05;
-
-            const rand = Math.random();
-            if (this.level >= 3 && rand > catThreshold) {
-                this.enemies.push(new Cat(this));
-            } else if (rand > birdThreshold) {
+            if (Math.random() > 0.5) {
                 this.enemies.push(new Bird(this));
             } else {
                 this.enemies.push(new Enemy(this));
             }
             this.enemyTimer = 0;
-
-            let minSpawnTime = 1000 - (this.level * 50) - (this.cheeseCount * 20);
+            // Recalculate interval base on randomness but keep it tighter as levels go up
+            // We use a base interval that gets smaller, plus random logic
+            // Actually, let's keep the random logic but scale the base.
+            // Simplified: The interval check uses a fixed target that we decrease on level up.
+            // But we reset to 0 and wait for `enemyInterval`.
+            // So decreasing `enemyInterval` works.
+            // We need to re-randomize it slightly to avoid predictability?
+            // Let's just set it to a range based on difficulty.
+            let minSpawnTime = 1000 - (this.level * 50);
             if (minSpawnTime < 200) minSpawnTime = 200;
+
             this.enemyInterval = Math.random() * 1000 + minSpawnTime;
         } else {
             this.enemyTimer += deltaTime;
@@ -230,8 +297,16 @@ export default class Game {
         this.enemies.forEach(enemy => {
             enemy.update(deltaTime);
             // Collision with Player
-            if (this.checkCollision(this.player, enemy)) {
-                this.gameOver = true;
+            if (this.started) {
+                if (this.checkCollision(this.player, enemy)) {
+                    if (!this.player.isInvulnerable) {
+                        this.lives--;
+                        this.player.hurt();
+                        if (this.lives <= 0) {
+                            this.gameOver = true;
+                        }
+                    }
+                }
             }
             // Collision with Projectiles
             this.projectiles.forEach(projectile => {
@@ -269,7 +344,10 @@ export default class Game {
     draw() {
         this.context.clearRect(0, 0, this.width, this.height);
         this.world.draw(this.context);
-        this.player.draw(this.context);
+
+        if (this.started) {
+            this.player.draw(this.context);
+        }
 
         this.projectiles.forEach(projectile => {
             projectile.draw(this.context);
@@ -291,6 +369,12 @@ export default class Game {
             cheeseEl.innerText = '🧀 ' + this.cheeseCount;
             cheeseEl.classList.remove('hidden');
         }
+
+
+        const livesEl = document.getElementById('lives');
+        if (livesEl) {
+            livesEl.innerText = 'Lives: ' + '❤️'.repeat(this.lives);
+        }
     }
 
     showLeaderboard() {
@@ -302,73 +386,39 @@ export default class Game {
         const nameInput = document.getElementById('player-name');
 
         leaderboardEl.classList.remove('hidden');
-        restartBtn.classList.add('hidden'); // Hide restart until name submitted or skipped
-        inputContainer.classList.remove('hidden');
+        restartBtn.classList.remove('hidden'); // allow restart immediately
+        inputContainer.classList.add('hidden'); // hidden by default since we auto-submit
 
         const currentPlayerEl = document.getElementById('current-player');
         if (currentPlayerEl) currentPlayerEl.classList.add('hidden');
 
+        // Pre-fill Name (or generate) and Auto-Submit
+        let name = localStorage.getItem('mouse_adventure_username');
+        if (!name) {
+            name = this.getRandomMouseName();
+            localStorage.setItem('mouse_adventure_username', name);
+        }
+        nameInput.value = name; // Just in case we show it later
+
+        // Add score immediately
+        const idx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount, this.difficulty);
+
         // Show Celebration
         const celebrationEl = document.getElementById('celebration-msg');
         if (celebrationEl) {
-            const timeVal = parseFloat((this.gameTime / 1000).toFixed(1));
-            const cheeseVal = this.cheeseCount || 0;
-            const scores = this.leaderboard.getScores();
-            let rank = 1;
-
-            // Calculate Rank based on Cheese Descending, Time Descending
-            for (const s of scores) {
-                const sCheese = s.cheese || 0;
-                const sTime = parseFloat(s.time);
-
-                // If existing score is better, push me down rankings
-                // Better = More cheese, OR same cheese and More time
-                if (sCheese > cheeseVal) {
-                    rank++;
-                } else if (sCheese === cheeseVal && sTime > timeVal) {
-                    rank++;
-                }
-            }
-
-            const timeStr = timeVal.toFixed(1) + 's';
-            // Use the same structure as the submit handler (slimmer, one line)
-            celebrationEl.innerHTML = `GAME OVER<br><span style="font-size: 0.6em">Rank #${rank} • Level ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}</span>`;
+            const rank = idx + 1;
+            const timeStr = (this.gameTime / 1000).toFixed(1) + 's';
+            celebrationEl.innerHTML = `RANK #${rank}<br>Level ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}`;
             celebrationEl.classList.remove('hidden');
         }
 
-        // Pre-fill Name
-        const storedName = localStorage.getItem('mouse_adventure_username');
-        if (storedName) {
-            nameInput.value = storedName;
-        } else {
-            nameInput.value = this.getRandomMouseName();
-        }
-
         // Render List
-        this.renderLeaderboardList(listEl);
+        this.renderLeaderboardList(listEl, idx);
 
-        // Handle Submit
-        submitBtn.onclick = () => {
-            const name = nameInput.value || this.getRandomMouseName();
-            localStorage.setItem('mouse_adventure_username', name);
-            // Add score and get the index of the new entry
-            const index = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount);
-            // Render list with the new index highlighted
-            this.renderLeaderboardList(listEl, index);
+        this.scoreSubmitted = true; // Mark as done
 
-            // Update Celebration with Rank
-            if (celebrationEl) {
-                const rank = index + 1;
-                const timeStr = (this.gameTime / 1000).toFixed(1) + 's';
-                celebrationEl.innerHTML = `RANK #${rank}<br>Level ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}`;
-            }
-
-            inputContainer.classList.add('hidden');
-            restartBtn.classList.remove('hidden');
-
-            // Flag as submitted so Space key restarts
-            this.scoreSubmitted = true;
-        };
+        // Remove redundant submit listener usage or keep it minimal
+        submitBtn.onclick = null;
 
         // Handle Restart Click
         restartBtn.onclick = () => {
@@ -420,10 +470,12 @@ export default class Game {
             }
             const lvl = entry.level || 1;
             const cheese = entry.cheese || 0;
-            const dateStr = entry.date ? new Date(entry.date).toLocaleString() : '';
+            const diff = entry.difficulty || 'hard';
+            const diffIcon = diff === 'easy' ? '🟢' : (diff === 'moderate' ? '🟠' : '🔴');
+
             div.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span style="flex: 2; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">#${index + 1} <strong>${entry.name}</strong></span>
+                    <span style="flex: 2; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">#${index + 1} ${diffIcon} <strong>${entry.name}</strong></span>
                     <span style="flex: 1; text-align: center;">🆙 ${lvl}</span>
                     <span style="flex: 1.5; text-align: right;">⏱️ ${entry.time}s | 🧀 ${cheese}</span>
                 </div>

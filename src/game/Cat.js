@@ -2,15 +2,28 @@ import Entity from './Entities.js';
 
 export default class Cat extends Entity {
     constructor(game) {
-        super(game, game.width, game.height - 50 - 60, 80, 60); // Slightly larger than standard enemy
+        // Cats are larger: 150x150? Adjust as needed.
+        // Ground is game.height - 50.
+        super(game, game.width, game.height - 50 - 100, 100, 100);
+        this.speedX = -(this.game.world.speed + 1); // Move slightly faster than world? Or same?
+        // User said "work in the direction of the mouse". 
+        // If they just move with world, they are static obstacles.
+        // If they have speed, they are active. Let's make them run towards player (Left).
+
         this.markedForDeletion = false;
-        // Cats move faster than the world scroll, effectively "running" towards player
-        this.runSpeed = 5;
+        // Visuals
+        this.color = '#e67e22'; // Orange cat
+
+        // Animation
+        this.animTimer = 0;
     }
 
     update(deltaTime) {
-        // Total speed = World Scroll + Run Speed
-        this.x -= (this.game.world.speed + this.runSpeed);
+        // Move left
+        this.x += this.speedX;
+
+        // Animation Tick
+        this.animTimer += deltaTime * 0.008; // Adjust speed as needed
 
         if (this.x < 0 - this.width) {
             this.markedForDeletion = true;
@@ -19,85 +32,127 @@ export default class Cat extends Entity {
 
     draw(context) {
         context.save();
-        context.translate(this.x, this.y);
+        const x = this.x;
+        const y = this.y;
+        const w = this.width;
+        const h = this.height;
 
-        // Body (Softer Orange rectangle/oval combo)
-        context.fillStyle = '#FFA500'; // Orange
+        // Animation Values
+        const bobY = Math.sin(this.animTimer) * 5; // Up and down body movement
+        const tailWag = Math.cos(this.animTimer) * 0.5; // Tail rotation
+        const legMove = Math.sin(this.animTimer * 1.5) * 10; // Leg offset
+
+        // Shadow (Static on ground, scales slightly with bob?)
+        context.fillStyle = 'rgba(0,0,0,0.2)';
         context.beginPath();
-        if (context.roundRect) {
-            context.roundRect(10, 20, 60, 40, 15);
-        } else {
-            context.rect(10, 20, 60, 40); // Fallback
-        }
+        context.ellipse(x + w / 2, y + h - 5, w / 2 - 10 - bobY, 10, 0, 0, Math.PI * 2);
         context.fill();
 
-        // Head (Round)
-        context.beginPath();
-        context.arc(20, 25, 28, 0, Math.PI * 2);
-        context.fill();
+        // Apply Bobbing to everything else
+        context.translate(0, bobY);
 
-        // Ears (Pointy but softer)
+        // Tail (Draw first so it's behind)
+        context.save();
+        context.translate(x + w - 20, y + h / 2 + 10);
+        context.rotate(tailWag - 0.5); // Base angle + wag
+        context.fillStyle = '#FF9933';
         context.beginPath();
-        context.moveTo(5, 10);
-        context.lineTo(12, -12); // Left Tip
+        context.moveTo(0, 0);
+        context.quadraticCurveTo(30, -20, 40, 10); // Curvy tail
         context.lineTo(25, 10);
+        context.quadraticCurveTo(20, -10, 0, 10);
+        context.fill();
+        context.restore();
+
+        // Cat Body (Round Loaf shape)
+        context.fillStyle = '#FF9933'; // Bright Ginger Orange
+        context.beginPath();
+        // Body ellipse
+        context.ellipse(x + w / 2, y + h / 2 + 10, w / 2 - 5, h / 2 - 15, 0, 0, Math.PI * 2);
         context.fill();
 
+        // Legs (Little nubs moving)
+        context.fillStyle = '#E67E22'; // Darker orange for legs
+        // Front Left
+        context.beginPath(); context.arc(x + 30 + legMove, y + h - 15, 12, 0, Math.PI * 2); context.fill();
+        // Front Right
+        context.beginPath(); context.arc(x + 30 - legMove, y + h - 15, 12, 0, Math.PI * 2); context.fill();
+        // Back Left
+        context.beginPath(); context.arc(x + w - 30 + legMove, y + h - 15, 12, 0, Math.PI * 2); context.fill();
+        // Back Right
+        context.beginPath(); context.arc(x + w - 30 - legMove, y + h - 15, 12, 0, Math.PI * 2); context.fill();
+
+        // Fur Fluff (Circles to make it fluffy - redraw over legs)
+        context.fillStyle = '#FF9933';
         context.beginPath();
-        context.moveTo(25, 10);
-        context.lineTo(38, -12); // Right Tip
-        context.lineTo(45, 10);
+        context.arc(x + 20, y + h - 25, 15, 0, Math.PI * 2); // Bottom left
+        context.arc(x + w - 20, y + h - 25, 15, 0, Math.PI * 2); // Bottom right
         context.fill();
 
-        // Inner Ears
-        context.fillStyle = '#FFDAB9'; // PeachPuff
-        context.beginPath();
-        context.moveTo(8, 5); context.lineTo(12, -5); context.lineTo(22, 5);
-        context.fill();
-        context.beginPath();
-        context.moveTo(28, 5); context.lineTo(38, -5); context.lineTo(42, 5);
-        context.fill();
+        // Head Group (Moves slightly less or delayed? strict sync for now)
+        // Ears
+        const drawEar = (ex, ey, rot) => {
+            context.save();
+            context.translate(ex, ey);
+            context.rotate(rot);
+            context.fillStyle = '#FF9933';
+            context.beginPath();
+            context.moveTo(-15, 0);
+            context.lineTo(0, -30);
+            context.lineTo(15, 0);
+            context.fill();
+            // Pink Inner
+            context.fillStyle = '#FFC0CB';
+            context.beginPath();
+            context.moveTo(-8, 0);
+            context.lineTo(0, -20);
+            context.lineTo(8, 0);
+            context.fill();
+            context.restore();
+        };
+        drawEar(x + 25, y + 30, -0.3 + Math.sin(this.animTimer) * 0.05); // Left
+        drawEar(x + w - 25, y + 30, 0.3 - Math.sin(this.animTimer) * 0.05); // Right
 
-        // Eyes (Big and cute)
-        context.fillStyle = 'black';
-        context.beginPath();
-        context.arc(12, 18, 4, 0, Math.PI * 2);
-        context.arc(32, 18, 4, 0, Math.PI * 2);
-        context.fill();
-
-        // Nose (Small triangle)
-        context.fillStyle = '#FF69B4'; // HotPink
-        context.beginPath();
-        context.moveTo(22, 28);
-        context.lineTo(19, 25);
-        context.lineTo(25, 25);
-        context.fill();
-
-        // Mouth ('w' shape)
-        context.strokeStyle = 'black';
-        context.lineWidth = 1.5;
-        context.beginPath();
-        context.moveTo(22, 28);
-        context.quadraticCurveTo(24, 30, 26, 28);
-        context.moveTo(22, 28);
-        context.quadraticCurveTo(20, 30, 18, 28);
-        context.stroke();
-
-        // Whiskers
-        context.strokeStyle = 'white';
-        context.lineWidth = 1;
-        context.beginPath();
-        context.moveTo(35, 25); context.lineTo(50, 22);
-        context.moveTo(35, 28); context.lineTo(50, 28);
-        context.moveTo(35, 31); context.lineTo(50, 34);
-        context.stroke();
-
-        // Paws (hidden or simple circles)
+        // Face details
+        // Eyes (Big and Cute)
         context.fillStyle = 'white';
         context.beginPath();
-        context.arc(20, 60, 6, 0, Math.PI * 2);
-        context.arc(60, 60, 6, 0, Math.PI * 2);
+        context.arc(x + 30, y + 50, 12, 0, Math.PI * 2); // Left
+        context.arc(x + w - 30, y + 50, 12, 0, Math.PI * 2); // Right
         context.fill();
+
+        // Pupils (Move slightly with bob?)
+        context.fillStyle = 'black';
+        context.beginPath();
+        context.arc(x + 32, y + 50, 5, 0, Math.PI * 2);
+        context.arc(x + w - 32, y + 50, 5, 0, Math.PI * 2);
+        context.fill();
+
+        // Shine in eyes
+        context.fillStyle = 'white';
+        context.beginPath();
+        context.arc(x + 34, y + 48, 2, 0, Math.PI * 2);
+        context.arc(x + w - 34, y + 48, 2, 0, Math.PI * 2);
+        context.fill();
+
+        // Nose
+        context.fillStyle = 'pink';
+        context.beginPath();
+        context.ellipse(x + w / 2, y + 65, 4, 3, 0, 0, Math.PI * 2);
+        context.fill();
+
+        // Whiskers (Bounce a bit)
+        context.strokeStyle = 'white';
+        context.lineWidth = 2;
+        const whiskBob = Math.cos(this.animTimer * 2) * 2;
+        context.beginPath();
+        // Left
+        context.moveTo(x + 25, y + 65); context.lineTo(x + 5, y + 60 + whiskBob);
+        context.moveTo(x + 25, y + 68); context.lineTo(x + 5, y + 70 + whiskBob);
+        // Right
+        context.moveTo(x + w - 25, y + 65); context.lineTo(x + w - 5, y + 60 + whiskBob);
+        context.moveTo(x + w - 25, y + 68); context.lineTo(x + w - 5, y + 70 + whiskBob);
+        context.stroke();
 
         context.restore();
     }
