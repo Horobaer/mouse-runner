@@ -7,6 +7,7 @@ import Enemy from './Enemy.js';
 import Bird from './Bird.js';
 import Cheese from './Cheese.js';
 import Leaderboard from './Leaderboard.js';
+import Cat from './Cat.js';
 
 export default class Game {
     constructor(canvas) {
@@ -45,7 +46,8 @@ export default class Game {
     }
 
     start() {
-        this.animate(0);
+        this.lastTime = performance.now();
+        this.animate(this.lastTime);
     }
 
     animate(timeStamp) {
@@ -132,7 +134,7 @@ export default class Game {
         this.gameTime = 0;
         this.level = 1;
         this.levelTimer = 0;
-        this.world.speed = 6; // Reset speed
+        this.world.speed = 12; // Reset speed
         this.enemyInterval = 2000;
         this.enemies = [];
         this.cheeses = [];
@@ -191,23 +193,35 @@ export default class Game {
         // Handle Enemies (Spikes and Birds)
         if (this.enemyTimer > this.enemyInterval) {
             // Random chance to spawn Bird or Ground Enemy
-            if (Math.random() > 0.5) {
+            // Level 3+: Chance for Cat
+
+            // Dynamic Difficulty based on Cheese
+            // As cheese count goes up:
+            // 1. Cats and Birds become more frequent (thresholds lower)
+            // 2. Spawns happen faster (interval decreases)
+
+            let catThreshold = 0.7 - (this.cheeseCount * 0.01);
+            if (catThreshold < 0.3) catThreshold = 0.3; // Cap at 70% chance
+
+            // Aggressive Bird increase:
+            // Starts at 0.4. Decreases by 0.02 per cheese.
+            // 10 cheese => 0.2 threshold (80% chance if not cat)
+            // 20 cheese => 0.05 threshold (almost guaranteed if not cat)
+            let birdThreshold = 0.4 - (this.cheeseCount * 0.03);
+            if (birdThreshold < 0.05) birdThreshold = 0.05;
+
+            const rand = Math.random();
+            if (this.level >= 3 && rand > catThreshold) {
+                this.enemies.push(new Cat(this));
+            } else if (rand > birdThreshold) {
                 this.enemies.push(new Bird(this));
             } else {
                 this.enemies.push(new Enemy(this));
             }
             this.enemyTimer = 0;
-            // Recalculate interval base on randomness but keep it tighter as levels go up
-            // We use a base interval that gets smaller, plus random logic
-            // Actually, let's keep the random logic but scale the base.
-            // Simplified: The interval check uses a fixed target that we decrease on level up.
-            // But we reset to 0 and wait for `enemyInterval`.
-            // So decreasing `enemyInterval` works.
-            // We need to re-randomize it slightly to avoid predictability?
-            // Let's just set it to a range based on difficulty.
-            let minSpawnTime = 1000 - (this.level * 50);
-            if (minSpawnTime < 200) minSpawnTime = 200;
 
+            let minSpawnTime = 1000 - (this.level * 50) - (this.cheeseCount * 20);
+            if (minSpawnTime < 200) minSpawnTime = 200;
             this.enemyInterval = Math.random() * 1000 + minSpawnTime;
         } else {
             this.enemyTimer += deltaTime;

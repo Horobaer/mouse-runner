@@ -2,14 +2,14 @@ import Entity from './Entities.js';
 
 export default class Player extends Entity {
     constructor(game) {
-        super(game, 100, 0, 64, 64); // Positioned at x=100
-        this.vy = 0;
+        super(game, 100, game.height - 50 - 50, 64, 64); // Positioned at x=100, y=ground
+        this.grounded = true;
         this.height = 50;
         this.color = '#888';
 
         this.vy = 0;
         this.weight = 1;
-        this.jumpStrength = -22;
+        this.jumpStrength = -11;
         this.grounded = false;
 
         // Visuals
@@ -47,54 +47,87 @@ export default class Player extends Entity {
     }
 
     draw(context) {
+        context.restore();
+
+        // Cute Mouse Drawing (Kawaii Style)
         context.save();
         const centerX = this.x + this.width / 2;
         const centerY = this.y + this.height / 2;
 
-        // Scale by 1% per cheese (only width/x-axis to get 'fatter')
-        const fatFactor = 1 + (this.game.cheeseCount || 0) * 0.01;
+        // Fat factor based on cheese
+        const fatFactor = 1 + (this.game.cheeseCount || 0) * 0.02; // More noticeable fatness
 
         context.translate(centerX, centerY);
         context.scale(fatFactor, 1);
-        context.translate(-centerX, -centerY);
 
-        // Draw Mouse Body (Oval)
-        // Body
+        // Body (Circle/Soft Oval)
         context.beginPath();
-        context.ellipse(this.x + this.width / 2, this.y + this.height / 2 + 10, this.width / 2, this.height / 3, 0, 0, Math.PI * 2);
-        context.fillStyle = this.color || '#888'; // Use instance color
+        context.ellipse(0, 10, this.width / 2, this.height / 2.5, 0, 0, Math.PI * 2);
+        context.fillStyle = this.color || '#A0A0A0';
         context.fill();
 
-        // Head
+        // Ears (Large and Round)
+        context.fillStyle = '#808080';
         context.beginPath();
-        context.arc(this.x + this.width * 0.7, this.y + this.height * 0.4, 20, 0, Math.PI * 2);
+        context.arc(-20, -15, 18, 0, Math.PI * 2); // Left Ear
+        context.arc(20, -15, 18, 0, Math.PI * 2);  // Right Ear
         context.fill();
 
-        // Ears
-        context.fillStyle = '#696969'; // Dim Gray
+        // Inner Ears (Pink)
+        context.fillStyle = '#FFC0CB';
         context.beginPath();
-        context.arc(this.x + this.width * 0.6, this.y + this.height * 0.2, 12, 0, Math.PI * 2);
-        context.arc(this.x + this.width * 0.8, this.y + this.height * 0.2, 12, 0, Math.PI * 2);
+        context.arc(-20, -15, 10, 0, Math.PI * 2);
+        context.arc(20, -15, 10, 0, Math.PI * 2);
         context.fill();
 
-        // Eyes
+        // Eyes (Large, Black, with Sparkles)
         context.fillStyle = 'black';
         context.beginPath();
-        context.arc(this.x + this.width * 0.75, this.y + this.height * 0.35, 3, 0, Math.PI * 2);
+        context.arc(-12, 0, 5, 0, Math.PI * 2);
+        context.arc(12, 0, 5, 0, Math.PI * 2);
         context.fill();
 
-        // Nose
-        context.fillStyle = 'pink';
+        // Eye Sparkles
+        context.fillStyle = 'white';
         context.beginPath();
-        context.arc(this.x + this.width * 0.85, this.y + this.height * 0.4, 3, 0, Math.PI * 2);
+        context.arc(-10, -2, 2, 0, Math.PI * 2);
+        context.arc(14, -2, 2, 0, Math.PI * 2);
         context.fill();
+
+        // Cheeks (Pink)
+        context.globalAlpha = 0.6;
+        context.fillStyle = '#FF69B4'; // HotPink
+        context.beginPath();
+        context.arc(-22, 8, 6, 0, Math.PI * 2);
+        context.arc(22, 8, 6, 0, Math.PI * 2);
+        context.fill();
+        context.globalAlpha = 1.0;
+
+        // Nose (Small Pink Button)
+        context.fillStyle = '#FFC0CB';
+        context.beginPath();
+        context.arc(0, 5, 4, 0, Math.PI * 2);
+        context.fill();
+
+        // Whiskers
+        context.strokeStyle = '#505050';
+        context.lineWidth = 2;
+        context.beginPath();
+        // Left
+        context.moveTo(-10, 5); context.lineTo(-35, 0);
+        context.moveTo(-10, 8); context.lineTo(-35, 10);
+        // Right
+        context.moveTo(10, 5); context.lineTo(35, 0);
+        context.moveTo(10, 8); context.lineTo(35, 10);
+        context.stroke();
 
         // Tail
-        context.strokeStyle = 'pink';
-        context.lineWidth = 3;
+        context.strokeStyle = '#FFC0CB';
+        context.lineWidth = 4;
+        context.lineCap = 'round';
         context.beginPath();
-        context.moveTo(this.x + 10, this.y + this.height / 2 + 10);
-        context.quadraticCurveTo(this.x - 20, this.y + this.height / 2 - 10, this.x - 10, this.y + this.height / 2 + 20);
+        context.moveTo(-25, 20);
+        context.quadraticCurveTo(-45, 10, -50, 30);
         context.stroke();
 
         context.restore();

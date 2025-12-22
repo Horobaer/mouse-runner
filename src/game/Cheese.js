@@ -20,27 +20,60 @@ export default class Cheese extends Entity {
     }
 
     draw(context) {
-        // Draw a yellow wedge/triangle or circle
-        context.fillStyle = '#f1c40f'; // Cheese Yellow
+        context.save();
+        context.translate(this.x, this.y);
 
-        // Draw wedge shape
+        // Cheese Wedge Shape (Cute Cartoon Style)
+
+        // 3D Side (Shadow)
+        context.fillStyle = '#FFA500'; // Dark Orange
         context.beginPath();
-        context.moveTo(this.x, this.y);
-        context.lineTo(this.x + this.width, this.y + this.height / 2);
-        context.lineTo(this.x, this.y + this.height);
-        context.closePath();
+        context.moveTo(5, this.height - 5);
+        context.lineTo(this.width, 5);
+        context.lineTo(this.width, this.height - 10);
+        context.lineTo(5, this.height + 5);
         context.fill();
-        context.strokeStyle = '#000';
+
+        // Top Face (Main Yellow)
+        context.fillStyle = '#FFD700'; // Gold
+        context.beginPath();
+        context.moveTo(5, this.height - 5);
+        context.lineTo(this.width, 5);
+        context.lineTo(20, 0); // Top point
+        context.lineTo(5, this.height - 5);
+        context.fill();
+
+        // Outline
+        context.strokeStyle = '#D2691E'; // Chocolate
         context.lineWidth = 2;
+        context.lineJoin = 'round';
         context.stroke();
 
-        // Add holes
-        context.fillStyle = '#d35400';
+        // Holes
+        context.fillStyle = '#DAA520'; // GoldenRod
         context.beginPath();
-        context.arc(this.x + 10, this.y + 15, 3, 0, Math.PI * 2);
+        context.arc(20, 15, 3, 0, Math.PI * 2);
         context.fill();
         context.beginPath();
-        context.arc(this.x + 15, this.y + 30, 4, 0, Math.PI * 2);
+        context.arc(32, 10, 2, 0, Math.PI * 2);
         context.fill();
+        context.beginPath();
+        context.arc(25, 25, 1.5, 0, Math.PI * 2);
+        context.fill();
+
+        // Cute Face (optional, maybe just holes is enough for cheese? Let's add a tiny smile)
+        context.fillStyle = '#000';
+        context.beginPath();
+        context.arc(12, 12, 1, 0, Math.PI * 2); // Eye
+        context.arc(28, 8, 1, 0, Math.PI * 2); // Eye
+        context.fill();
+
+        context.strokeStyle = '#000';
+        context.lineWidth = 1;
+        context.beginPath();
+        context.arc(20, 15, 5, 0.2, Math.PI - 0.2); // Smile under holes
+        context.stroke();
+
+        context.restore();
     }
 }

@@ -3,13 +3,12 @@ import Entity from './Entities.js';
 export default class Enemy extends Entity {
     constructor(game) {
         super(game, game.width, game.height - 50 - 50, 50, 50); // Start off-screen right
-        this.speedX = -Math.random() * 4 - 3; // Random speed between -3 and -7
         this.markedForDeletion = false;
         this.color = '#8B0000'; // Dark Red
     }
 
     update(deltaTime) {
-        this.x += this.speedX + -this.game.world.speed * 0.5; // Move left + world scroll effect (pseudo)
+        this.x -= this.game.world.speed; // Move exactly with world scroll
 
         // Actually since the world "scrolls", the enemies should just move left relative to camera
         // But in this simple engine, the world scroll is visual. 
@@ -21,23 +20,40 @@ export default class Enemy extends Entity {
     }
 
     draw(context) {
-        // Draw Spike/Trap
-        context.fillStyle = this.color;
+        // Draw Cute Stone
+        context.save();
+        context.translate(this.x, this.y);
+
+        // Stone Body (Round/Irregular)
+        context.fillStyle = '#708090'; // SlateGray
         context.beginPath();
-        const bottom = this.y + this.height;
-        context.moveTo(this.x, bottom);
-        context.lineTo(this.x + this.width / 2, this.y);
-        context.lineTo(this.x + this.width, bottom);
-        context.lineTo(this.x, bottom);
+        context.arc(this.width / 2, this.height / 2, this.width / 2, 0, Math.PI * 2);
         context.fill();
 
-        // Metallic shine
-        context.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        // Highlight (Shine)
+        context.fillStyle = '#B0C4DE'; // LightSteelBlue
         context.beginPath();
-        context.moveTo(this.x + 10, bottom);
-        context.lineTo(this.x + this.width / 2, this.y + 10);
-        context.lineTo(this.x + this.width / 2 + 5, this.y + 20);
-        context.lineTo(this.x + 20, bottom);
+        context.arc(this.width / 2 - 10, this.height / 2 - 10, 5, 0, Math.PI * 2);
         context.fill();
+
+        // Angry/Cute Face
+
+        // Eyes (Slanted lines for "angry" but cute)
+        context.strokeStyle = 'white';
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(10, 15); context.lineTo(20, 20);
+        context.moveTo(40, 15); context.lineTo(30, 20);
+        context.stroke();
+
+        // Mouth (Grumpy line)
+        context.strokeStyle = 'white';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(15, 35);
+        context.quadraticCurveTo(25, 30, 35, 35);
+        context.stroke();
+
+        context.restore();
     }
 }

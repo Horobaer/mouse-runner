@@ -5,7 +5,7 @@ export default class World {
         this.game = game;
         this.width = this.game.width;
         this.height = this.game.height;
-        this.speed = 6;
+        this.speed = 12;
         this.groundHeight = 50;
         this.groundX = 0;
         this.background = new Background(game);
