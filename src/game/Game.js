@@ -14,14 +14,10 @@ export default class Game {
         this.height = canvas.height;
 
         this.input = new InputHandler();
-        this.cheeses = [];
-        this.cheeseCount = 0;
-        this.lives = 2; // Start with 2 lives
+        this.world = new World(this);
         this.player = new Player(this);
         this.leaderboard = new Leaderboard();
         this.languageManager = new LanguageManager();
-        this.languageManager.init();
-
         this.languageManager.init();
 
         this.currentSuggestedName = ""; // Track for dynamic updates
@@ -113,6 +109,8 @@ export default class Game {
 
             this.started = true;
             startScreen.classList.add('hidden');
+            const uiLayer = document.getElementById('ui-layer');
+            if (uiLayer) uiLayer.classList.remove('hidden');
 
             // Allow music to start if user interaction happened
         };
