@@ -69,10 +69,7 @@ export default class Player extends Entity {
             }
         }
 
-        // Shooting
-        if (this.game.input.isClicked()) {
-            this.game.shoot(this.x + this.width, this.y + this.height / 2);
-        }
+        // Shooting - REMOVED
 
         // Ground collision
         if (this.y > this.game.height - this.height - 50) {

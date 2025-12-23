@@ -17,33 +17,54 @@
       <div id="level">Level: 1</div>
     </div>
     <div id="start-screen">
-      <h1>Mouse Adventure</h1>
-      <p>Enter your name to start:</p>
-      <input type="text" id="start-player-name" placeholder="Mouse Name" maxlength="10">
-      <button id="start-btn">Start Game</button>
+      <div id="language-selection" style="position: absolute; top: 10px; right: 10px;">
+        <button id="lang-btn-en"
+          style="cursor: pointer; background: none; border: none; font-size: 1.5em;">🇬🇧</button>
+        <button id="lang-btn-de"
+          style="cursor: pointer; background: none; border: none; font-size: 1.5em;">🇩🇪</button>
+      </div>
+      <h1 data-i18n="gameTitle">Mouse Adventure</h1>
+      <p data-i18n="enterName">Enter your name to start:</p>
+      <input type="text" id="start-player-name" placeholder="Mouse Name" maxlength="10" data-i18n="namePlaceholder">
+      <button id="start-btn" data-i18n="startBtn">Start Game</button>
 
       <div id="difficulty-selection">
         <label>
-          <input type="radio" name="difficulty" value="hard" checked> Hard
+          <input type="radio" name="difficulty" value="hard" checked> <span data-i18n="difficultyHard">Hard</span>
         </label>
         <label>
-          <input type="radio" name="difficulty" value="moderate"> Moderate
+          <input type="radio" name="difficulty" value="moderate"> <span data-i18n="difficultyModerate">Moderate</span>
         </label>
         <label>
-          <input type="radio" name="difficulty" value="easy"> Easy
+          <input type="radio" name="difficulty" value="easy"> <span data-i18n="difficultyEasy">Easy</span>
         </label>
       </div>
     </div>
     <div id="leaderboard" class="hidden">
       <div id="celebration-msg" class="hidden">GAME OVER<br><span style="font-size: 0.6em">Rank # -- • Level 1 • --s •
           🧀 0</span></div>
-      <h2>Leaderboard</h2>
+      <h2 data-i18n="leaderboardTitle">Leaderboard</h2>
       <div id="leaderboard-list"></div>
       <div id="name-input-container">
-        <input type="text" id="player-name" placeholder="Enter Name" maxlength="10">
-        <button id="submit-score">Submit</button>
+        <input type="text" id="player-name" placeholder="Enter Name" maxlength="10" data-i18n="enterNameLeaderboard">
+        <button id="submit-score" data-i18n="submitBtn">Submit</button>
       </div>
-      <button id="restart-btn" class="hidden">Restart Game</button>
+
+      <div id="difficulty-selection-restart" style="margin-top: 15px;">
+        <label>
+          <input type="radio" name="difficulty-restart" value="hard" checked> <span
+            data-i18n="difficultyHard">Hard</span>
+        </label>
+        <label>
+          <input type="radio" name="difficulty-restart" value="moderate"> <span
+            data-i18n="difficultyModerate">Moderate</span>
+        </label>
+        <label>
+          <input type="radio" name="difficulty-restart" value="easy"> <span data-i18n="difficultyEasy">Easy</span>
+        </label>
+      </div>
+
+      <button id="restart-btn" class="hidden" data-i18n="restartBtn">Restart Game</button>
     </div>
     <canvas id="gameCanvas"></canvas>
   </div>

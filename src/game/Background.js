@@ -89,6 +89,10 @@ export default class Background {
     }
 
     draw(context) {
+        // Draw Sky
+        context.fillStyle = '#E0F7FA'; // Match cloud's light cyan or a sky color
+        context.fillRect(0, 0, this.width, this.height);
+
         this.layers.forEach(layer => layer.draw(context));
     }
 }

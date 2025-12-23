@@ -2,11 +2,9 @@ import InputHandler from './InputHandler.js';
 import World from './World.js';
 import Player from './Player.js';
 
-import Projectile from './Projectile.js';
-import Enemy from './Enemy.js';
-import Bird from './Bird.js';
 import Cheese from './Cheese.js';
 import Leaderboard from './Leaderboard.js';
+import LanguageManager from './LanguageManager.js';
 
 export default class Game {
     constructor(canvas) {
@@ -16,11 +14,18 @@ export default class Game {
         this.height = canvas.height;
 
         this.input = new InputHandler();
-        this.world = new World(this);
+        this.cheeses = [];
+        this.cheeseCount = 0;
+        this.lives = 2; // Start with 2 lives
         this.player = new Player(this);
         this.leaderboard = new Leaderboard();
+        this.languageManager = new LanguageManager();
+        this.languageManager.init();
 
-        this.projectiles = [];
+        this.languageManager.init();
+
+        this.currentSuggestedName = ""; // Track for dynamic updates
+
         this.enemies = []; // Stores both ground enemies and birds
         this.enemyTimer = 0;
         this.enemyInterval = 2000; // ms
@@ -55,41 +60,38 @@ export default class Game {
 
         // Pre-fill name
         const storedName = localStorage.getItem('mouse_adventure_username');
-        startInput.value = storedName || "Cheesy McRun";
+        const initialName = storedName || this.languageManager.getRandomMouseName();
+        startInput.value = initialName;
+        if (!storedName) {
+            this.currentSuggestedName = initialName;
+        }
+
+        // Subscribe to language changes
+        this.languageManager.subscribe((lang) => {
+            // Update difficulty labels if visible
+            const playerEl = document.getElementById('current-player');
+            if (playerEl && !playerEl.classList.contains('hidden')) {
+                // We need to re-render the player text
+                // This is a bit tricky because we need the current difficulty and name.
+                // For simplicity, we can just hide/reshow or update if we stored state.
+                // Since 'difficulty' and 'name' are local to start(), we might need to store them in 'this' or DOM.
+                // But the user asked for *start screen* default name update.
+            }
+
+            // Update Name Input if it matches the previous suggestion
+            if (document.activeElement !== startInput && startInput.value === this.currentSuggestedName) {
+                const newName = this.languageManager.getRandomMouseName();
+                startInput.value = newName;
+                this.currentSuggestedName = newName;
+            }
+        });
 
         startBtn.onclick = () => {
-            const name = startInput.value || this.getRandomMouseName();
+            const name = startInput.value || this.languageManager.getRandomMouseName();
             localStorage.setItem('mouse_adventure_username', name);
 
             // Difficulty Logic
-            const difficultyEls = document.getElementsByName('difficulty');
-            let difficulty = 'hard';
-            for (const el of difficultyEls) {
-                if (el.checked) {
-                    difficulty = el.value;
-                    break;
-                }
-            }
-
-            // Hard starts with current speed (6)
-            // Moderate starts with 65% of hard speed
-            // Easy starts with 30% of hard speed
-            const HARD_SPEED = 6;
-            // Base Glide Duration (Hard)
-            let glideDuration = 1000;
-
-            if (difficulty === 'hard') {
-                this.baseSpeed = HARD_SPEED;
-                glideDuration = 1000;
-            } else if (difficulty === 'moderate') {
-                this.baseSpeed = HARD_SPEED * 0.65;
-                glideDuration = 1000 + 1500;
-            } else if (difficulty === 'easy') {
-                this.baseSpeed = HARD_SPEED * 0.3;
-                glideDuration = 1000 + 2500;
-            }
-            this.difficulty = difficulty;
-            this.player.maxGlideTime = glideDuration;
+            this.applyDifficultySettings();
 
             // Apply immediately
             this.world.speed = this.baseSpeed;
@@ -97,7 +99,11 @@ export default class Game {
             // Update HUD
             const playerEl = document.getElementById('current-player');
             if (playerEl) {
-                playerEl.innerText = 'Player: ' + name + ' (' + difficulty.toUpperCase() + ')';
+                // Determine difficulty label
+                let diffLabel = this.difficulty === 'hard' ? this.languageManager.t('difficultyHard') :
+                    (this.difficulty === 'moderate' ? this.languageManager.t('difficultyModerate') : this.languageManager.t('difficultyEasy'));
+
+                playerEl.innerText = this.languageManager.t('player') + ' ' + name + ' (' + diffLabel.toUpperCase() + ')';
                 playerEl.classList.remove('hidden');
             }
 
@@ -169,7 +175,7 @@ export default class Game {
         const restartBtn = document.getElementById('restart-btn');
         const submitBtn = document.getElementById('submit-score');
 
-        const name = nameInput.value || this.getRandomMouseName();
+        const name = nameInput.value || this.languageManager.getRandomMouseName();
         localStorage.setItem('mouse_adventure_username', name);
 
         // Add Score and get Index
@@ -193,23 +199,27 @@ export default class Game {
         this.gameTime = 0;
         this.level = 1;
         this.levelTimer = 0;
-        this.world.speed = this.baseSpeed || 6; // Reset speed to chosen difficulty
-        this.enemyInterval = 2000;
-        this.enemies = [];
-        this.cheeses = [];
-        this.cheeseCount = 0;
-        this.cheeses = [];
-        this.cheeseCount = 0;
-        this.lives = 2;
-        this.projectiles = [];
-        this.projectiles = [];
-        this.player = new Player(this);
-        // Restore difficulty settings (Speed is handled above, but glide time needs re-applying)
-        if (this.difficulty === 'moderate') this.player.maxGlideTime = 2500;
-        else if (this.difficulty === 'easy') this.player.maxGlideTime = 3500;
-        else this.player.maxGlideTime = 1000; // Hard/Default
+
+        // Check for difficulty change on restart screen
+        const restartDiffEls = document.getElementsByName('difficulty-restart');
+        let newDifficulty = null;
+        for (const el of restartDiffEls) {
+            if (el.checked) {
+                newDifficulty = el.value;
+                break;
+            }
+        }
+        if (newDifficulty && newDifficulty !== this.difficulty) {
+            this.difficulty = newDifficulty;
+        }
+
+        // Apply Difficulty Settings (Speed and Glide)
+        this.applyDifficultySettings(this.difficulty);
 
         this.world = new World(this);
+        // CRITICAL FIX: Set speed AFTER creating new world, or pass it in constructor
+        this.world.speed = this.baseSpeed;
+
         this.lastTime = performance.now();
 
         // Update HUD Name
@@ -224,9 +234,7 @@ export default class Game {
         this.player.color = '#888';
     }
 
-    shoot(x, y) {
-        this.projectiles.push(new Projectile(this, x, y));
-    }
+    // shoot(x, y) REMOVED
 
     update(deltaTime) {
         // --- BACKGROUND SCENERY MODE ---
@@ -263,11 +271,7 @@ export default class Game {
 
         this.world.update(deltaTime);
 
-        // Handle Projectiles
-        this.projectiles.forEach(projectile => {
-            projectile.update(deltaTime);
-        });
-        this.projectiles = this.projectiles.filter(p => !p.markedForDeletion);
+        this.world.update(deltaTime);
 
         // Handle Enemies (Spikes and Birds)
         if (this.enemyTimer > this.enemyInterval) {
@@ -308,14 +312,7 @@ export default class Game {
                     }
                 }
             }
-            // Collision with Projectiles
-            this.projectiles.forEach(projectile => {
-                if (this.checkCollision(projectile, enemy)) {
-                    enemy.markedForDeletion = true;
-                    projectile.markedForDeletion = true;
-                    // this.score += 5; // REMOVED Point scoring
-                }
-            });
+            // Collision with Projectiles - REMOVED
         });
         this.enemies = this.enemies.filter(e => !e.markedForDeletion);
 
@@ -349,9 +346,10 @@ export default class Game {
             this.player.draw(this.context);
         }
 
-        this.projectiles.forEach(projectile => {
-            projectile.draw(this.context);
-        });
+        if (this.started) {
+            this.player.draw(this.context);
+        }
+
         this.enemies.forEach(enemy => {
             enemy.draw(this.context);
         });
@@ -362,8 +360,8 @@ export default class Game {
         // UI Updates (DOM)
         const scoreEl = document.getElementById('score');
         const levelEl = document.getElementById('level');
-        if (scoreEl) scoreEl.innerText = 'Time: ' + (this.gameTime / 1000).toFixed(1) + 's';
-        if (levelEl) levelEl.innerText = 'Level: ' + this.level;
+        if (scoreEl) scoreEl.innerText = this.languageManager.t('time') + ' ' + (this.gameTime / 1000).toFixed(1) + 's';
+        if (levelEl) levelEl.innerText = this.languageManager.t('level') + ' ' + this.level;
         const cheeseEl = document.getElementById('cheese-count');
         if (cheeseEl) {
             cheeseEl.innerText = '🧀 ' + this.cheeseCount;
@@ -373,7 +371,7 @@ export default class Game {
 
         const livesEl = document.getElementById('lives');
         if (livesEl) {
-            livesEl.innerText = 'Lives: ' + '❤️'.repeat(this.lives);
+            livesEl.innerText = this.languageManager.t('lives') + ' ' + '❤️'.repeat(this.lives);
         }
     }
 
@@ -389,13 +387,21 @@ export default class Game {
         restartBtn.classList.remove('hidden'); // allow restart immediately
         inputContainer.classList.add('hidden'); // hidden by default since we auto-submit
 
+        // Sync difficulty-restart radios with current difficulty
+        const restartDiffEls = document.getElementsByName('difficulty-restart');
+        for (const el of restartDiffEls) {
+            if (el.value === this.difficulty) {
+                el.checked = true;
+            }
+        }
+
         const currentPlayerEl = document.getElementById('current-player');
         if (currentPlayerEl) currentPlayerEl.classList.add('hidden');
 
         // Pre-fill Name (or generate) and Auto-Submit
         let name = localStorage.getItem('mouse_adventure_username');
         if (!name) {
-            name = this.getRandomMouseName();
+            name = this.languageManager.getRandomMouseName();
             localStorage.setItem('mouse_adventure_username', name);
         }
         nameInput.value = name; // Just in case we show it later
@@ -408,7 +414,8 @@ export default class Game {
         if (celebrationEl) {
             const rank = idx + 1;
             const timeStr = (this.gameTime / 1000).toFixed(1) + 's';
-            celebrationEl.innerHTML = `RANK #${rank}<br>Level ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}`;
+            // Translate RANK
+            celebrationEl.innerHTML = `RANK #${rank}<br>${this.languageManager.t('level')} ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}`;
             celebrationEl.classList.remove('hidden');
         }
 
@@ -429,9 +436,7 @@ export default class Game {
     }
 
     getRandomMouseName() {
-        const adjectives = ['Speedy', 'Cheesy', 'Fluffy', 'Brave', 'Tiny', 'Mighty', 'Sneaky', 'Happy'];
-        const nouns = ['Mouse', 'Rat', 'Squeaker', 'Nibbler', 'Runner', 'Whiskers', 'Tail', 'Cheese'];
-        return adjectives[Math.floor(Math.random() * adjectives.length)] + nouns[Math.floor(Math.random() * nouns.length)];
+        return this.languageManager.getRandomMouseName();
     }
 
     renderLeaderboardList(container, highlightIndex = -1) {
@@ -526,7 +531,8 @@ export default class Game {
         // but maybe keep "GAME OVER"
         this.context.fillStyle = 'white';
         this.context.font = '60px Impact';
-        this.context.fillText('GAME OVER', this.width / 2 - 150, this.height / 2);
+        const gameOverText = this.languageManager.t('gameOver');
+        this.context.fillText(gameOverText, this.width / 2 - 150, this.height / 2);
     }
 
     checkCollision(rect1, rect2) {
@@ -536,5 +542,41 @@ export default class Game {
             rect1.y < rect2.y + rect2.height &&
             rect1.height + rect1.y > rect2.y
         );
+    }
+
+    applyDifficultySettings(forcedDifficulty = null) {
+        // Difficulty Logic
+        let difficulty = forcedDifficulty;
+
+        if (!difficulty) {
+            const difficultyEls = document.getElementsByName('difficulty');
+            difficulty = 'hard'; // default
+            for (const el of difficultyEls) {
+                if (el.checked) {
+                    difficulty = el.value;
+                    break;
+                }
+            }
+        }
+
+        // Hard starts with current speed (6)
+        // Moderate starts with 65% of hard speed
+        // Easy starts with 30% of hard speed
+        const HARD_SPEED = 6;
+        // Base Glide Duration (Hard)
+        let glideDuration = 1000;
+
+        if (difficulty === 'hard') {
+            this.baseSpeed = HARD_SPEED;
+            glideDuration = 1000;
+        } else if (difficulty === 'moderate') {
+            this.baseSpeed = HARD_SPEED * 0.65;
+            glideDuration = 1000 + 1500;
+        } else if (difficulty === 'easy') {
+            this.baseSpeed = HARD_SPEED * 0.3;
+            glideDuration = 1000 + 2500;
+        }
+        this.difficulty = difficulty;
+        this.player.maxGlideTime = glideDuration;
     }
 }
