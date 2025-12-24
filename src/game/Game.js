@@ -2,6 +2,8 @@ import InputHandler from './InputHandler.js';
 import World from './World.js';
 import Player from './Player.js';
 
+import Enemy from './Enemy.js';
+import Bird from './Bird.js';
 import Cheese from './Cheese.js';
 import Leaderboard from './Leaderboard.js';
 import LanguageManager from './LanguageManager.js';
@@ -21,7 +23,6 @@ export default class Game {
         this.languageManager.init();
 
         this.currentSuggestedName = ""; // Track for dynamic updates
-
         this.enemies = []; // Stores both ground enemies and birds
         this.enemyTimer = 0;
         this.enemyInterval = 2000; // ms
@@ -32,14 +33,13 @@ export default class Game {
         this.cheeseCount = 0;
 
         this.lastTime = 0;
-
         this.gameTime = 0;
+        this.started = false;
         this.gameOver = false;
         this.leaderboardShown = false;
         this.restartCooldown = 0;
         this.scoreSubmitted = false;
 
-        // Level System
         this.level = 1;
         this.levelTimer = 0;
         this.levelDuration = 10000; // 10 seconds
@@ -116,38 +116,45 @@ export default class Game {
         };
 
         // Start the background scenery loop
-        this.animate(0);
+        requestAnimationFrame((t) => {
+            this.lastTime = t;
+            requestAnimationFrame(this.animate.bind(this));
+        });
     }
 
     animate(timeStamp) {
+        if (!this.lastTime) this.lastTime = timeStamp;
         const deltaTime = timeStamp - this.lastTime;
         this.lastTime = timeStamp;
 
-        // Run loop if game is running OR if it hasn't started (demo mode)
-        if (!this.gameOver || !this.started) {
-            this.update(deltaTime);
-            this.draw();
-            requestAnimationFrame(this.animate.bind(this));
-        } else {
-            // Stop drawing game loop, show leaderboard
-            if (!this.leaderboardShown) {
-                this.showLeaderboard();
-                this.leaderboardShown = true;
-                this.restartCooldown = 1.0; // 1 second cooldown
-            }
+        try {
+            // Run loop if game is running OR if it hasn't started (demo mode)
+            if (!this.gameOver || !this.started) {
+                this.update(deltaTime);
+                this.draw();
+                requestAnimationFrame((t) => this.animate(t));
+            } else {
+                // Stop drawing game loop, show leaderboard
+                if (!this.leaderboardShown) {
+                    this.showLeaderboard();
+                    this.leaderboardShown = true;
+                    this.restartCooldown = 1.0; // 1 second cooldown
+                }
 
-            if (this.restartCooldown > 0) {
-                this.restartCooldown -= deltaTime / 1000;
-            }
+                if (this.restartCooldown > 0) {
+                    this.restartCooldown -= deltaTime / 1000;
+                }
 
-            // Check for Space to Restart (only if cooldown over)
-            const nameInput = document.getElementById('player-name');
-            // Allow restarting with Space if we are done with submission logic
-            if (this.restartCooldown <= 0 && this.input.didJump() && document.activeElement !== nameInput) {
-                if (this.scoreSubmitted) {
-                    this.handleGlobalRestart();
+                // Check for Space to Restart (only if cooldown over)
+                const nameInput = document.getElementById('player-name');
+                if (this.restartCooldown <= 0 && this.input.didJump() && document.activeElement !== nameInput) {
+                    if (this.scoreSubmitted) {
+                        this.handleGlobalRestart();
+                    }
                 }
             }
+        } catch (e) {
+            console.error("CRITICAL GAME LOOP ERROR:", e);
         }
     }
 
@@ -269,8 +276,6 @@ export default class Game {
 
         this.world.update(deltaTime);
 
-        this.world.update(deltaTime);
-
         // Handle Enemies (Spikes and Birds)
         if (this.enemyTimer > this.enemyInterval) {
             // Random chance to spawn Bird or Ground Enemy
@@ -339,10 +344,6 @@ export default class Game {
     draw() {
         this.context.clearRect(0, 0, this.width, this.height);
         this.world.draw(this.context);
-
-        if (this.started) {
-            this.player.draw(this.context);
-        }
 
         if (this.started) {
             this.player.draw(this.context);
