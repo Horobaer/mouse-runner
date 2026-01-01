@@ -176,24 +176,56 @@ export default class Player extends Entity {
             context.arc(0, canopyY + 25 * fatFactor, 4 * fatFactor, 0, Math.PI * 2);
             context.fill();
         } else if (this.vy < 0 && !this.grounded) {
-            // --- DRAW FLAPPING WINGS (Flying Up) ---
-            // Simple white wings that flap
-            const flap = Math.sin(this.animTimer * 20); // Fast flap
-            const wingY = -20 + flap * 5;
-            const wingWidth = 25;
-            const wingHeight = 15;
+            // Bigger, Cuter Wings!
+            const flap = Math.sin(this.animTimer * 15); // Slightly slower, majestic flap
+            const wingY = -35 + flap * 10; // Higher start, wider flap
 
-            context.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            context.save();
+            context.fillStyle = '#ffffff';
+            context.strokeStyle = '#81d4fa'; // Light blue outline
+            context.lineWidth = 2.5;
 
-            // Back Wing (Left)
-            context.beginPath();
-            context.ellipse(-10, wingY, wingWidth, wingHeight, -0.5, 0, Math.PI * 2);
-            context.fill();
+            // Helper to draw a cute round wing
+            const drawCuteWing = (isFront) => {
+                context.beginPath();
+                // Wing Shape (Round & bubbly)
+                // Start from body center
+                context.moveTo(0, 0);
+                // Top curve - big and round
+                context.bezierCurveTo(20, -40, 60, -30, 70, 0);
+                // Bottom curve - rounded back to body
+                context.bezierCurveTo(60, 20, 20, 15, 0, 0);
 
-            // Front Wing (Right - slightly offset)
-            context.beginPath();
-            context.ellipse(10, wingY, wingWidth, wingHeight, 0.5, 0, Math.PI * 2);
-            context.fill();
+                context.fill();
+                context.stroke();
+
+                // Inner detail (feathers line)
+                if (isFront) {
+                    context.beginPath();
+                    context.moveTo(15, -5);
+                    context.lineTo(45, -5);
+                    context.strokeStyle = '#e1f5fe';
+                    context.lineWidth = 1;
+                    context.stroke();
+                }
+            };
+
+            // Back Wing (Left from viewer)
+            context.save();
+            context.translate(-10 * fatFactor, wingY);
+            context.scale(-1, 1); // Flip horizontally
+            context.rotate(flap * 0.2 - 0.2); // Rotated slightly back
+            drawCuteWing(false);
+            context.restore();
+
+            // Front Wing (Right from viewer)
+            context.save();
+            context.translate(10 * fatFactor, wingY);
+            context.rotate(flap * 0.2 + 0.2); // Rotated slightly forward
+            drawCuteWing(true);
+            context.restore();
+
+            context.restore();
         }
 
         // --- DRAW BODY ---
