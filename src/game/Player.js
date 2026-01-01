@@ -140,26 +140,59 @@ export default class Player extends Entity {
             }
         }
 
-        // --- DRAW GLIDER (Umbrella/Parachute) ---
+        // --- DRAW CHEESE PARAGLIDER ---
         if (this.isGliding) {
-            context.strokeStyle = '#5d4037';
-            context.lineWidth = 4;
+            // ... (existing code for glider)
+            const canopyY = -100 * fatFactor;
+            const canopyWidth = 80 * fatFactor;
+            const canopyHeight = 40 * fatFactor;
+
+            // Strings
+            context.strokeStyle = '#ecf0f1'; // White/Grey strings
+            context.lineWidth = 1.5;
             context.beginPath();
-            context.moveTo(0, 0);
-            context.lineTo(0, -75 * fatFactor);
+            // Left String
+            context.moveTo(-10, -10); // From mouse back
+            context.lineTo(-canopyWidth / 2 + 10, canopyY + canopyHeight);
+            // Right String
+            context.moveTo(10, -10); // From mouse front
+            context.lineTo(canopyWidth / 2 - 10, canopyY + canopyHeight);
             context.stroke();
 
-            context.fillStyle = '#f1c40f';
+            // Canopy (Cheese Wedge / Arc)
+            context.fillStyle = '#FFD700'; // Cheese Gold
             context.beginPath();
-            context.arc(0, -75 * fatFactor, 60 * fatFactor, Math.PI, 0);
+            // Draw a semi-circle/arc for the parachute
+            context.arc(0, canopyY + canopyHeight, canopyWidth / 2, Math.PI, 0);
+            // Close the bottom flat
+            context.lineTo(-canopyWidth / 2, canopyY + canopyHeight);
             context.fill();
 
-            // Spots on glider
-            context.fillStyle = '#f39c12';
+            // Cheese Holes on Chute
+            context.fillStyle = '#FFA500'; // Darker Orange for holes
             context.beginPath();
-            context.arc(-22 * fatFactor, -105 * fatFactor, 7 * fatFactor, 0, Math.PI * 2);
-            context.arc(30 * fatFactor, -90 * fatFactor, 10 * fatFactor, 0, Math.PI * 2);
-            context.arc(0, -120 * fatFactor, 6 * fatFactor, 0, Math.PI * 2);
+            context.arc(-20 * fatFactor, canopyY + 15 * fatFactor, 6 * fatFactor, 0, Math.PI * 2);
+            context.arc(15 * fatFactor, canopyY + 10 * fatFactor, 8 * fatFactor, 0, Math.PI * 2);
+            context.arc(0, canopyY + 25 * fatFactor, 4 * fatFactor, 0, Math.PI * 2);
+            context.fill();
+        } else if (this.vy < 0 && !this.grounded) {
+            // --- DRAW FLAPPING WINGS (Flying Up) ---
+            // Simple white wings that flap
+            const flap = Math.sin(this.animTimer * 20); // Fast flap
+            const wingY = -20 + flap * 5;
+            const wingWidth = 25;
+            const wingHeight = 15;
+
+            context.fillStyle = 'rgba(255, 255, 255, 0.8)';
+
+            // Back Wing (Left)
+            context.beginPath();
+            context.ellipse(-10, wingY, wingWidth, wingHeight, -0.5, 0, Math.PI * 2);
+            context.fill();
+
+            // Front Wing (Right - slightly offset)
+            context.beginPath();
+            context.ellipse(10, wingY, wingWidth, wingHeight, 0.5, 0, Math.PI * 2);
             context.fill();
         }
 

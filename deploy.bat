@@ -11,7 +11,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo Deploying with cost optimization (256MB RAM, 1 CPU, Max 1 Instance)...
-cmd /c "gcloud run deploy mouse-runner --source . --region europe-west3 --allow-unauthenticated --memory 256Mi --cpu 1 --max-instances 1 --port 80 --service-account gamer-des-nordens@mouse-runner-481722.iam.gserviceaccount.com --project mouse-runner-481722"
+cmd /c "gcloud run deploy mouse-runner --source . --region us-central1 --allow-unauthenticated --memory 256Mi --cpu 1 --max-instances 1 --port 80 --service-account gamer-des-nordens@mouse-runner-481722.iam.gserviceaccount.com --project mouse-runner-481722"
 
 if %errorlevel% neq 0 (
     echo.

@@ -89,8 +89,17 @@ export default class Background {
     }
 
     draw(context) {
-        // Draw Sky
-        context.fillStyle = '#E0F7FA'; // Match cloud's light cyan or a sky color
+        // Draw Sky based on Difficulty
+        let skyColor = '#E0F7FA'; // Default (Moderate)
+        const difficulty = this.game.difficulty;
+
+        if (difficulty === 'hard') {
+            skyColor = '#1a1a1a'; // Dark/Black for Hard
+        } else if (difficulty === 'easy') {
+            skyColor = '#dcedc8'; // Light Green for Easy
+        }
+
+        context.fillStyle = skyColor;
         context.fillRect(0, 0, this.width, this.height);
 
         this.layers.forEach(layer => layer.draw(context));

@@ -265,4 +265,76 @@ button:hover {
   #level {
     display: none;
   }
+
+  /* Leaderboard Landscape Optimization */
+  #leaderboard {
+    width: 90%;
+    max-width: 600px;
+    padding: 1rem;
+    gap: 0.5rem;
+    top: 50%;
+    border: 1px solid #555;
+  }
+
+  #leaderboard h2 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  #celebration-msg {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  #leaderboard-list {
+    max-height: 120px;
+    /* Reduced height for landscape */
+    font-size: 0.9rem;
+  }
+
+  .leaderboard-entry {
+    padding: 0.2rem 0.5rem;
+  }
+
+  #name-input-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  #player-name {
+    padding: 0.4rem;
+    font-size: 0.9rem;
+    width: 150px;
+  }
+
+  #submit-score {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  #restart-btn {
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 0;
+    /* Hide text */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #restart-btn::after {
+    content: "🔄";
+    font-size: 1.5rem;
+    color: white;
+  }
+
+  #difficulty-selection-restart {
+    margin-top: 0.5rem;
+    font-size: 1rem;
+  }
 }

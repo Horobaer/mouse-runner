@@ -7,6 +7,7 @@ import Bird from './Bird.js';
 import Cheese from './Cheese.js';
 import Leaderboard from './Leaderboard.js';
 import LanguageManager from './LanguageManager.js';
+import Fireworks from './Fireworks.js';
 
 export default class Game {
     constructor(canvas) {
@@ -21,6 +22,9 @@ export default class Game {
         this.leaderboard = new Leaderboard();
         this.languageManager = new LanguageManager();
         this.languageManager.init();
+
+        this.fireworks = new Fireworks();
+        this.levelAnnouncementTimer = 0;
 
         this.currentSuggestedName = ""; // Track for dynamic updates
         this.enemies = []; // Stores both ground enemies and birds
@@ -266,7 +270,20 @@ export default class Game {
             if (this.enemyInterval > 500) {
                 this.enemyInterval -= 200; // Faster spawns
             }
+
+            // Level Up Effects
+            this.fireworks.explode(this.width / 2, this.height / 2, 100); // Center burst
+            this.fireworks.explode(this.width / 4, this.height / 3, 50);
+            this.fireworks.explode(this.width * 0.75, this.height / 3, 50);
+
+            this.levelAnnouncementTimer = 3000; // Show for 3 seconds
         }
+
+        if (this.levelAnnouncementTimer > 0) {
+            this.levelAnnouncementTimer -= deltaTime;
+        }
+
+        this.fireworks.update();
 
         // Time Scoring
         if (this.started) {
@@ -371,6 +388,29 @@ export default class Game {
         const livesEl = document.getElementById('lives');
         if (livesEl) {
             livesEl.innerText = this.languageManager.t('lives') + ' ' + '❤️'.repeat(Math.max(0, this.lives));
+        }
+
+        // Draw Fireworks
+        this.fireworks.draw(this.context);
+
+        // Draw Level Up Announcement
+        if (this.levelAnnouncementTimer > 0) {
+            this.context.save();
+            this.context.shadowColor = 'black';
+            this.context.shadowBlur = 10;
+
+            // Main Title "LEVEL UP!"
+            this.context.font = 'bold 80px "Chewy", cursive, sans-serif';
+            this.context.fillStyle = '#FFD700'; // Cheese Gold
+            this.context.textAlign = 'center';
+            this.context.fillText(this.languageManager.t('levelUp'), this.width / 2, this.height / 2 - 50);
+
+            // Subtitle "Speed Increased"
+            this.context.font = 'bold 40px "Roboto", sans-serif';
+            this.context.fillStyle = '#FFA500'; // Orange
+            this.context.fillText(this.languageManager.t('speedUp'), this.width / 2, this.height / 2 + 20);
+
+            this.context.restore();
         }
     }
 

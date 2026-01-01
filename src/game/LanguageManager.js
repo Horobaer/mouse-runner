@@ -21,8 +21,9 @@ export default class LanguageManager {
                 'time': 'Time:',
                 'rank': 'Rank #',
                 'unknownMouse': 'Unknown Mouse',
-                'mouseAdjectives': ['Speedy', 'Cheesy', 'Fluffy', 'Brave', 'Tiny', 'Mighty', 'Sneaky', 'Happy'],
-                'mouseNouns': ['Mouse', 'Rat', 'Squeaker', 'Nibbler', 'Runner', 'Whiskers', 'Tail', 'Cheese']
+                'defaultNames': ['Cheese Friend', 'Cheese Sprinter', 'Cheese Jumper', 'Cheese Lover', 'Cheese Master'],
+                'levelNum': 'LEVEL {0}!',
+                'levelStats': 'Speed +{speed} • Cheese +{cheese}%'
             },
             'de': {
                 'gameTitle': 'Maus Abenteuer',
@@ -43,8 +44,9 @@ export default class LanguageManager {
                 'time': 'Zeit:',
                 'rank': 'Rang #',
                 'unknownMouse': 'Unbekannte Maus',
-                'mouseAdjectives': ['Schneller', 'Mutiger', 'Kleiner', 'Mächtiger', 'Hastiger', 'Glücklicher', 'Verrückter', 'Super'],
-                'mouseNouns': ['Käseliebhaber', 'Käseläufer', 'Käsesprinter', 'Käsespringer', 'Käsejäger', 'Renner', 'Nager', 'Meister']
+                'defaultNames': ['Käsefreund', 'Käse Sprinter', 'Käse Springer', 'Käse Liebhaber', 'Käse Meister'],
+                'levelNum': 'LEVEL {0}!',
+                'levelStats': 'Tempo +{speed} • Käse +{cheese}%'
             }
         };
         this.listeners = [];
@@ -122,8 +124,7 @@ export default class LanguageManager {
     }
 
     getRandomMouseName() {
-        const adjectives = this.dictionary[this.currentLang].mouseAdjectives;
-        const nouns = this.dictionary[this.currentLang].mouseNouns;
-        return adjectives[Math.floor(Math.random() * adjectives.length)] + ' ' + nouns[Math.floor(Math.random() * nouns.length)];
+        const names = this.dictionary[this.currentLang].defaultNames;
+        return names[Math.floor(Math.random() * names.length)];
     }
 }
