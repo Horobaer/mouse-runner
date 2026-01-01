@@ -243,3 +243,26 @@ button {
 button:hover {
   background: #45a049;
 }
+
+/* Mobile Landscape Optimization */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+  #ui-layer {
+    font-size: 0.8rem;
+    padding: 0 20px;
+    justify-content: flex-start;
+    gap: 1rem;
+  }
+
+  #score,
+  #level,
+  #cheese-count,
+  #lives {
+    font-size: 1.2rem;
+  }
+
+  /* Hide non-essential info to save space */
+  #current-player,
+  #level {
+    display: none;
+  }
+}

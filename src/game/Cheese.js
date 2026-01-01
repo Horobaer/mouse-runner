@@ -9,14 +9,16 @@ export default class Cheese extends Entity {
         const jumpHeight = 150;
         const y = groundY - 50 - Math.random() * jumpHeight * 1.5;
 
+
         // Reference size: 60x60
         super(game, game.width, y, 60, 60);
-        this.vx = -this.game.world.speed;
         this.image = null;
     }
 
     update(deltaTime) {
-        this.x += this.vx;
+        // Use dynamic world speed to ensure it stays in sync with ground if level speeds up
+        const vx = -this.game.world.speed;
+        this.x += vx;
         if (this.x + this.width < 0) this.markedForDeletion = true;
     }
 

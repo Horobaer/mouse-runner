@@ -370,7 +370,7 @@ export default class Game {
 
         const livesEl = document.getElementById('lives');
         if (livesEl) {
-            livesEl.innerText = this.languageManager.t('lives') + ' ' + '❤️'.repeat(this.lives);
+            livesEl.innerText = this.languageManager.t('lives') + ' ' + '❤️'.repeat(Math.max(0, this.lives));
         }
     }
 
