@@ -8,6 +8,8 @@ import Cheese from './Cheese.js';
 import Leaderboard from './Leaderboard.js';
 import LanguageManager from './LanguageManager.js';
 import Fireworks from './Fireworks.js';
+import Heart from './Heart.js';
+import Cat from './Cat.js';
 
 export default class Game {
     constructor(canvas) {
@@ -35,6 +37,7 @@ export default class Game {
         this.cheeseTimer = 0;
         this.cheeseInterval = 1000;
         this.cheeseCount = 0;
+        this.heartsCollected = 0; // Track collected hearts
 
         this.lastTime = 0;
         this.gameTime = 0;
@@ -50,6 +53,8 @@ export default class Game {
 
         // Lives System
         this.lives = 2; // Start with 2 lives
+        this.heartSpawned = false;
+        this.catSpawned = false;
         this.started = false;
     }
 
@@ -72,10 +77,6 @@ export default class Game {
             const playerEl = document.getElementById('current-player');
             if (playerEl && !playerEl.classList.contains('hidden')) {
                 // We need to re-render the player text
-                // This is a bit tricky because we need the current difficulty and name.
-                // For simplicity, we can just hide/reshow or update if we stored state.
-                // Since 'difficulty' and 'name' are local to start(), we might need to store them in 'this' or DOM.
-                // But the user asked for *start screen* default name update.
             }
 
             // Update Name Input if it matches the previous suggestion
@@ -188,7 +189,7 @@ export default class Game {
         localStorage.setItem('mouse_adventure_username', name);
 
         // Add Score and get Index
-        const highlightIdx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount, this.difficulty);
+        const highlightIdx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount, this.difficulty, this.heartsCollected);
 
         // Re-render with highlight
         this.renderLeaderboardList(listEl, highlightIdx);
@@ -208,6 +209,14 @@ export default class Game {
         this.gameTime = 0;
         this.level = 1;
         this.levelTimer = 0;
+        this.cheeseCount = 0; // Reset cheese (missing in original code? assuming cheese resets on game over for score?)
+        // Oh wait, cheeseCount was not reset in original code in restart(), but it should be for a new game session score.
+        // Actually line 403 in view_file showed cheeseCount being used.
+        // Looking at line 208-248 of original code... I don't see cheeseCount reset! 
+        // It was line 39 in constructor.
+        // I will add cheeseCount reset too just in case, and heartsCollected.
+        this.cheeseCount = 0;
+        this.heartsCollected = 0;
 
         // Check for difficulty change on restart screen
         const restartDiffEls = document.getElementsByName('difficulty-restart');
@@ -240,7 +249,19 @@ export default class Game {
         }
 
         // Reset Color
+        this.player = new Player(this); // Full reset of player state
         this.player.color = '#888';
+
+        // Clear Entities
+        this.enemies = [];
+        this.cheeses = [];
+        this.enemyTimer = 0;
+        this.cheeseTimer = 0;
+
+        // Reset Spawning Flags
+        this.heartSpawned = false;
+        this.catSpawned = false;
+        this.lives = 2; // Reset lives
     }
 
     // shoot(x, y) REMOVED
@@ -260,6 +281,8 @@ export default class Game {
         if (this.started && this.levelTimer > this.levelDuration) {
             this.level++;
             this.levelTimer = 0;
+            this.heartSpawned = false; // Reset for next level
+            this.catSpawned = false;
             // Increase Difficulty
             this.world.speed += 1; // Faster world
             // Dynamic Color Change
@@ -301,6 +324,52 @@ export default class Game {
             } else {
                 this.enemies.push(new Enemy(this));
             }
+
+            // Flying Heart Spawning (Once per level)
+            if (!this.heartSpawned) {
+                // Guaranteed spawn if we are past 80% of level duration
+                const isFailsafe = this.levelTimer > this.levelDuration * 0.8;
+                // Random chance (20%) if we are past 20% of level duration
+                const isRandomLuck = this.levelTimer > this.levelDuration * 0.2 && Math.random() < 0.2;
+
+                if (isFailsafe || isRandomLuck) {
+                    this.enemies.push(new Heart(this));
+                    this.heartSpawned = true;
+                }
+            }
+
+            // Cat Spawning (One per level based on difficulty rules)
+            if (!this.catSpawned) {
+                const difficulty = this.difficulty;
+                let shouldSpawn = false;
+                let canJump = false;
+
+                if (difficulty === 'hard') {
+                    // Hard: Every level. Level 3+ can jump.
+                    shouldSpawn = true;
+                    if (this.level >= 3) canJump = true;
+                } else if (difficulty === 'moderate') {
+                    // Mid: Every level starting Level 3
+                    if (this.level >= 3) shouldSpawn = true;
+                } else {
+                    // Easy: Every 2nd Level (2, 4, 6...)
+                    if (this.level % 2 === 0) shouldSpawn = true;
+                }
+
+                if (shouldSpawn) {
+                    // Spawn logic: Random chance OR Failsafe near end of level
+                    // Increased chance to 0.3 (30%) per check
+                    // Failsafe: If > 80% level time and not spawned yet, force spawn.
+                    const isFailsafe = this.levelTimer > this.levelDuration * 0.8;
+                    const isRandomLuck = this.levelTimer > this.levelDuration * 0.1 && Math.random() < 0.3;
+
+                    if (isFailsafe || isRandomLuck) {
+                        this.enemies.push(new Cat(this, canJump));
+                        this.catSpawned = true;
+                    }
+                }
+            }
+
             this.enemyTimer = 0;
             // Recalculate interval base on randomness but keep it tighter as levels go up
             // We use a base interval that gets smaller, plus random logic
@@ -323,7 +392,16 @@ export default class Game {
             // Collision with Player
             if (this.started) {
                 if (this.checkCollision(this.player, enemy)) {
-                    if (!this.player.isInvulnerable) {
+                    // Check if it's a Heart
+                    if (enemy instanceof Heart) {
+                        this.lives++;
+                        this.heartsCollected++; // Track collected hearts
+                        enemy.markedForDeletion = true;
+                        // Floating text or effect?
+                        this.fireworks.explode(enemy.x, enemy.y, 20); // Mini explosion
+                        // Optional: Sound
+                    } else if (!this.player.isInvulnerable) {
+                        // Cat or Generic Enemy
                         this.lives--;
                         this.player.hurt();
                         if (this.lives <= 0) {
@@ -376,18 +454,23 @@ export default class Game {
         // UI Updates (DOM)
         const scoreEl = document.getElementById('score');
         const levelEl = document.getElementById('level');
-        if (scoreEl) scoreEl.innerText = this.languageManager.t('time') + ' ' + (this.gameTime / 1000).toFixed(1) + 's';
-        if (levelEl) levelEl.innerText = this.languageManager.t('level') + ' ' + this.level;
+        if (scoreEl) scoreEl.innerHTML = '<span class="material-symbols-outlined">timer</span> ' + (this.gameTime / 1000).toFixed(1) + 's';
+        if (levelEl) levelEl.innerHTML = '<span class="material-symbols-outlined">stairs_2</span> ' + this.level;
         const cheeseEl = document.getElementById('cheese-count');
         if (cheeseEl) {
             cheeseEl.innerText = '🧀 ' + this.cheeseCount;
             cheeseEl.classList.remove('hidden');
         }
+        const heartEl = document.getElementById('heart-count');
+        if (heartEl) {
+            heartEl.innerText = '❤️ ' + this.heartsCollected;
+            heartEl.classList.remove('hidden');
+        }
 
 
         const livesEl = document.getElementById('lives');
         if (livesEl) {
-            livesEl.innerText = this.languageManager.t('lives') + ' ' + '❤️'.repeat(Math.max(0, this.lives));
+            livesEl.innerHTML = '<span class="material-symbols-outlined">favorite</span>'.repeat(Math.max(0, this.lives));
         }
 
         // Draw Fireworks
@@ -446,7 +529,7 @@ export default class Game {
         nameInput.value = name; // Just in case we show it later
 
         // Add score immediately
-        const idx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount, this.difficulty);
+        const idx = this.leaderboard.addScore(name, (this.gameTime / 1000).toFixed(1), this.level, this.cheeseCount, this.difficulty, this.heartsCollected);
 
         // Show Celebration
         const celebrationEl = document.getElementById('celebration-msg');
@@ -454,7 +537,7 @@ export default class Game {
             const rank = idx + 1;
             const timeStr = (this.gameTime / 1000).toFixed(1) + 's';
             // Translate RANK
-            celebrationEl.innerHTML = `RANK #${rank}<br>${this.languageManager.t('level')} ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount}`;
+            celebrationEl.innerHTML = `<span class="material-symbols-outlined">emoji_events</span> RANK #${rank}<br><span class="material-symbols-outlined">stairs_2</span> ${this.level} • ${timeStr} • 🧀 ${this.cheeseCount} • ❤️ ${this.heartsCollected}`;
             celebrationEl.classList.remove('hidden');
         }
 
@@ -508,20 +591,26 @@ export default class Game {
             const index = start + i;
             const div = document.createElement('div');
             div.className = 'leaderboard-entry';
+            const diff = entry.difficulty || 'hard';
+            div.classList.add('diff-' + diff); // Add Color Class
+
             if (index === highlightIndex) {
                 div.classList.add('highlight');
                 highlightEl = div;
             }
             const lvl = entry.level || 1;
             const cheese = entry.cheese || 0;
-            const diff = entry.difficulty || 'hard';
-            const diffIcon = diff === 'easy' ? '🟢' : (diff === 'moderate' ? '🟠' : '🔴');
+            const hearts = entry.hearts || 0; // Get hearts
+
+            const diffIcon = diff === 'easy' ? '<span class="material-symbols-outlined">sentiment_satisfied</span>' : (diff === 'moderate' ? '<span class="material-symbols-outlined">sentiment_neutral</span>' : '<span class="material-symbols-outlined">sentiment_very_dissatisfied</span>');
 
             div.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span style="flex: 2; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">#${index + 1} ${diffIcon} <strong>${entry.name}</strong></span>
-                    <span style="flex: 1; text-align: center;">🆙 ${lvl}</span>
-                    <span style="flex: 1.5; text-align: right;">⏱️ ${entry.time}s | 🧀 ${cheese}</span>
+                    <span style="flex: 2; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px;">#${index + 1} ${diffIcon} <strong>${entry.name}</strong></span>
+                    <span style="flex: 1; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 1.1em;">stairs_2</span> ${lvl}</span>
+                    <span style="flex: 2; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 1.1em;">timer</span> ${entry.time}s | 🧀 ${cheese} | ❤️ ${hearts}
+                    </span>
                 </div>
             `;
             container.appendChild(div);

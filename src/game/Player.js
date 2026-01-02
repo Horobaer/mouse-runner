@@ -26,6 +26,10 @@ export default class Player extends Entity {
         this.animTimer = 0; // Unified timer
         this.glideTimer = 0;
         this.isGliding = false;
+
+        // Ear Flapping
+        this.isFlappingEars = false;
+        this.earFlapTimer = 0;
     }
 
     update(deltaTime) {
@@ -33,11 +37,24 @@ export default class Player extends Entity {
         if (this.game.input.didJump()) {
             this.vy = this.jumpStrength;
             this.grounded = false;
+            // Trigger Ear Flap (Twice)
+            this.isFlappingEars = true;
+            this.earFlapTimer = 0;
         }
 
         // Vertical Physics
         this.y += this.vy;
         this.animTimer += deltaTime * 0.01;
+
+        // Ear Flap Logic
+        if (this.isFlappingEars) {
+            this.earFlapTimer += deltaTime;
+            // Flap duration for 2 flaps (e.g., 500ms for 2 cycles)
+            if (this.earFlapTimer > 500) {
+                this.isFlappingEars = false;
+                this.earFlapTimer = 0;
+            }
+        }
 
         // Hit Timer (Invulnerability)
         if (this.isInvulnerable) {
@@ -69,8 +86,6 @@ export default class Player extends Entity {
             }
         }
 
-        // Shooting - REMOVED
-
         // Ground collision
         if (this.y > this.game.height - this.height - 50) {
             this.y = this.game.height - this.height - 50;
@@ -97,7 +112,7 @@ export default class Player extends Entity {
         let earRotation = 0;
         let rotation = 0;
 
-        const fatFactor = 1 + (this.game.cheeseCount || 0) * 0.01;
+        const fatFactor = 1; // Mouse size constant, does not grow with cheese
 
         // Hit Rotation (Barrel Roll)
         if (this.isRolling) {
@@ -106,28 +121,44 @@ export default class Player extends Entity {
             rotation = (this.invulnerabilityTimer / 500) * Math.PI * 2;
         }
 
+        // Ear Flapping Animation Logic
+        if (this.isFlappingEars) {
+            // Flap twice in 500ms
+            // We want 2 full sine waves in 500ms
+            // Period T = 250ms per flap
+            // Frequency f = 1/T = 0.004 Hz
+            // Angular freq w = 2*PI*f
+            // val = sin(time * factor)
+            // factor = 2 * PI / 250 ~= 0.025
+
+            // Let's use 0.03 to be safe and flappy
+            earRotation = Math.sin(this.earFlapTimer * 0.03) * 0.8;
+        }
+
         // State-based Animation
         if (this.isGliding) {
             scaleX = 0.9;
             scaleY = 1.1;
             offsetY = Math.sin(this.animTimer * 3) * 3;
-            earRotation = -0.2;
+            // Only override if not flapping
+            if (!this.isFlappingEars) earRotation = -0.2;
         } else if (this.grounded) {
             // Breathing / Walking Bounce
             scaleX = 1 * fatFactor;
             scaleY = 1 - Math.abs(Math.sin(this.animTimer * 1.5)) * 0.1;
             offsetY = Math.abs(Math.sin(this.animTimer * 1.5)) * 5;
-            earRotation = Math.sin(this.animTimer) * 0.1;
+            if (!this.isFlappingEars) earRotation = Math.sin(this.animTimer) * 0.1;
+
         } else if (this.vy < 0) {
             // Jumping Up (Stretch)
             scaleX = 0.8 * fatFactor;
             scaleY = 1.2;
-            earRotation = 0.2;
+            // No default ear rotation here, let flapping take over or stay neutral
         } else {
             // Falling
             scaleX = 1 * fatFactor;
             scaleY = 1;
-            earRotation = -0.2;
+            if (!this.isFlappingEars) earRotation = -0.2;
         }
 
         context.translate(centerX, centerY + offsetY);
@@ -175,57 +206,6 @@ export default class Player extends Entity {
             context.arc(15 * fatFactor, canopyY + 10 * fatFactor, 8 * fatFactor, 0, Math.PI * 2);
             context.arc(0, canopyY + 25 * fatFactor, 4 * fatFactor, 0, Math.PI * 2);
             context.fill();
-        } else if (this.vy < 0 && !this.grounded) {
-            // Bigger, Cuter Wings!
-            const flap = Math.sin(this.animTimer * 15); // Slightly slower, majestic flap
-            const wingY = -35 + flap * 10; // Higher start, wider flap
-
-            context.save();
-            context.fillStyle = '#ffffff';
-            context.strokeStyle = '#81d4fa'; // Light blue outline
-            context.lineWidth = 2.5;
-
-            // Helper to draw a cute round wing
-            const drawCuteWing = (isFront) => {
-                context.beginPath();
-                // Wing Shape (Round & bubbly)
-                // Start from body center
-                context.moveTo(0, 0);
-                // Top curve - big and round
-                context.bezierCurveTo(20, -40, 60, -30, 70, 0);
-                // Bottom curve - rounded back to body
-                context.bezierCurveTo(60, 20, 20, 15, 0, 0);
-
-                context.fill();
-                context.stroke();
-
-                // Inner detail (feathers line)
-                if (isFront) {
-                    context.beginPath();
-                    context.moveTo(15, -5);
-                    context.lineTo(45, -5);
-                    context.strokeStyle = '#e1f5fe';
-                    context.lineWidth = 1;
-                    context.stroke();
-                }
-            };
-
-            // Back Wing (Left from viewer)
-            context.save();
-            context.translate(-10 * fatFactor, wingY);
-            context.scale(-1, 1); // Flip horizontally
-            context.rotate(flap * 0.2 - 0.2); // Rotated slightly back
-            drawCuteWing(false);
-            context.restore();
-
-            // Front Wing (Right from viewer)
-            context.save();
-            context.translate(10 * fatFactor, wingY);
-            context.rotate(flap * 0.2 + 0.2); // Rotated slightly forward
-            drawCuteWing(true);
-            context.restore();
-
-            context.restore();
         }
 
         // --- DRAW BODY ---
@@ -258,9 +238,15 @@ export default class Player extends Entity {
         // Ears
         context.fillStyle = '#696969';
         context.beginPath();
+        // Use earRotation for flapping!
+        // Left Ear
         context.ellipse(o - 15, r - 22, 18, 18, earRotation, 0, Math.PI * 2);
         context.fill();
+        // Right Ear
         context.beginPath();
+        // Mirror rotation for symmetric flap, or keep same for parallel flap?
+        // Flapping usually means ears go down/up together or symmetric. 
+        // Let's do symmetric: -earRotation
         context.ellipse(o + 15, r - 22, 18, 18, -earRotation, 0, Math.PI * 2);
         context.fill();
 

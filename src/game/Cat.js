@@ -1,21 +1,24 @@
 import Entity from './Entities.js';
 
 export default class Cat extends Entity {
-    constructor(game) {
+    constructor(game, canJump = false) {
         // Cats are larger: 150x150? Adjust as needed.
         // Ground is game.height - 50.
         super(game, game.width, game.height - 50 - 100, 100, 100);
-        this.speedX = -(this.game.world.speed + 1); // Move slightly faster than world? Or same?
-        // User said "work in the direction of the mouse". 
-        // If they just move with world, they are static obstacles.
-        // If they have speed, they are active. Let's make them run towards player (Left).
+        this.speedX = -(this.game.world.speed + 1); // Move slightly faster than world
 
         this.markedForDeletion = false;
-        // Visuals
         this.color = '#e67e22'; // Orange cat
 
         // Animation
         this.animTimer = 0;
+
+        // Jump Logic
+        this.canJump = canJump;
+        this.hasJumped = false;
+        this.vy = 0;
+        this.weight = 1;
+        this.groundY = game.height - 50 - 100; // Original Y (Ground)
     }
 
     update(deltaTime) {
@@ -23,7 +26,25 @@ export default class Cat extends Entity {
         this.x += this.speedX;
 
         // Animation Tick
-        this.animTimer += deltaTime * 0.008; // Adjust speed as needed
+        this.animTimer += deltaTime * 0.008;
+
+        // Jump Logic
+        if (this.canJump && !this.hasJumped) {
+            // Random chance to jump if on ground
+            if (this.y >= this.groundY && Math.random() < 0.01) {
+                this.vy = -25; // Jump strength
+                this.hasJumped = true;
+            }
+        }
+
+        // Apply Gravity
+        this.y += this.vy;
+        if (this.y < this.groundY) {
+            this.vy += this.weight;
+        } else {
+            this.y = this.groundY;
+            this.vy = 0;
+        }
 
         if (this.x < 0 - this.width) {
             this.markedForDeletion = true;

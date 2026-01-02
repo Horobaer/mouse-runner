@@ -5,13 +5,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mouse Adventure</title>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 </head>
 
 <body>
   <div id="app">
     <div id="ui-layer" class="hidden">
-      <div id="score">Time: 0.0s</div>
+      <div id="score"><span class="material-symbols-outlined">timer</span> 0.0s</div>
       <div id="cheese-count" class="">🧀 0</div>
+      <div id="heart-count">❤️ 0</div>
       <div id="current-player" class="hidden">Player: </div>
       <div id="lives">Lives: 3</div>
       <div id="level">Level: 1</div>
@@ -19,9 +22,9 @@
     <div id="start-screen">
       <div id="language-selection" style="position: absolute; top: 10px; right: 10px;">
         <button id="lang-btn-en"
-          style="cursor: pointer; background: none; border: none; font-size: 1.5em;">🇬🇧</button>
+          style="cursor: pointer; background: none; border: none; font-size: 1.2em; font-weight: bold; color: white;">EN</button>
         <button id="lang-btn-de"
-          style="cursor: pointer; background: none; border: none; font-size: 1.5em;">🇩🇪</button>
+          style="cursor: pointer; background: none; border: none; font-size: 1.2em; color: gray;">DE</button>
       </div>
       <h1 data-i18n="gameTitle">Mouse Adventure</h1>
       <p data-i18n="enterName">Enter your name to start:</p>
@@ -29,13 +32,13 @@
       <button id="start-btn" data-i18n="startBtn">Start Game</button>
 
       <div id="difficulty-selection">
-        <label>
+        <label class="diff-hard">
           <input type="radio" name="difficulty" value="hard" checked> <span data-i18n="difficultyHard">Hard</span>
         </label>
-        <label>
+        <label class="diff-moderate">
           <input type="radio" name="difficulty" value="moderate"> <span data-i18n="difficultyModerate">Moderate</span>
         </label>
-        <label>
+        <label class="diff-easy">
           <input type="radio" name="difficulty" value="easy"> <span data-i18n="difficultyEasy">Easy</span>
         </label>
       </div>
@@ -51,20 +54,21 @@
       </div>
 
       <div id="difficulty-selection-restart" style="margin-top: 15px;">
-        <label>
+        <label class="diff-hard">
           <input type="radio" name="difficulty-restart" value="hard" checked> <span
             data-i18n="difficultyHard">Hard</span>
         </label>
-        <label>
+        <label class="diff-moderate">
           <input type="radio" name="difficulty-restart" value="moderate"> <span
             data-i18n="difficultyModerate">Moderate</span>
         </label>
-        <label>
+        <label class="diff-easy">
           <input type="radio" name="difficulty-restart" value="easy"> <span data-i18n="difficultyEasy">Easy</span>
         </label>
       </div>
 
-      <button id="restart-btn" class="hidden" data-i18n="restartBtn">Restart Game</button>
+      <button id="restart-btn" class="hidden"><span class="material-symbols-outlined">refresh</span> <span
+          data-i18n="restartBtn">Restart Game</span></button>
     </div>
     <canvas id="gameCanvas"></canvas>
   </div>
