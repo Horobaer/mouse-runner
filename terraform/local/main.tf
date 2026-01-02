@@ -30,7 +30,7 @@ resource "docker_container" "mouse_runner" {
   image = "mouse-runner-local"
   name  = "mouse-runner-local"
   ports {
-    internal = 80
+    internal = 8080
     external = 8091
   }
   restart = "no"
