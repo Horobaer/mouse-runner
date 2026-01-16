@@ -3,6 +3,9 @@ echo Deploying Mouse Runner Locally via Terraform...
 echo Cleaning up existing container...
 call docker rm -f mouse-runner-local 2>nul
 
+echo Changing directory to terraform\local...
+pushd terraform\local
+
 echo Initializing Terraform...
 call terraform init
 if %errorlevel% neq 0 (
@@ -13,6 +16,14 @@ if %errorlevel% neq 0 (
 
 echo Applying Terraform configuration...
 call terraform apply -auto-approve
+if %errorlevel% neq 0 (
+    echo Terraform apply failed!
+    popd
+    pause
+    exit /b %errorlevel%
+)
+
+popd
 if %errorlevel% neq 0 (
     echo Terraform apply failed!
     pause

@@ -287,99 +287,107 @@ button:hover {
 @media screen and (max-height: 500px) and (orientation: landscape) {
   #ui-layer {
     font-size: 0.8rem;
-    padding: 0 20px;
+    padding: 0 10px;
     justify-content: flex-start;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 
-  #score,
-  #level,
-  #cheese-count,
-  #lives {
-    font-size: 1.2rem;
+  #score, #level, #cheese-count, #lives {
+    font-size: 1.1rem;
+    white-space: nowrap;
   }
-
-  /* Hide non-essential info to save space */
-  #current-player,
-  #level {
-    display: none;
-  }
+  
+  #current-player { display: none; }
 
   /* Leaderboard Landscape Optimization */
   #leaderboard {
-    width: 90%;
-    max-width: 600px;
-    padding: 1rem;
+    width: 95%; /* Use more width */
+    max-width: 700px;
+    max-height: 95vh; /* Ensure it fits */
+    padding: 0.5rem;
     gap: 0.5rem;
-    top: 50%;
-    border: 1px solid #555;
   }
 
   #leaderboard h2 {
-    font-size: 1.5rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    margin: 0;
   }
 
   #celebration-msg {
-    font-size: 1.2rem;
-    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    margin: 0;
+    line-height: 1.1;
   }
 
   #leaderboard-list {
-    max-height: 120px;
-    /* Reduced height for landscape */
-    font-size: 0.9rem;
+    flex: 1; /* Grow/Shrink */
+    min-height: 60px; /* Minimum visible */
+    overflow-y: auto;
+    font-size: 0.85rem;
   }
 
   .leaderboard-entry {
-    padding: 0.2rem 0.5rem;
+    padding: 2px 4px;
+    margin-bottom: 2px;
   }
 
+  /* Compact Input Row */
   #name-input-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    flex-shrink: 0;
+    margin: 0;
+    gap: 5px;
   }
-
+  
   #player-name {
-    padding: 0.4rem;
-    font-size: 0.9rem;
-    width: 150px;
+    padding: 2px 5px;
+    height: 30px;
   }
-
+  
   #submit-score {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.9rem;
+    padding: 0 10px;
+    height: 30px;
   }
 
-  #restart-btn {
-    padding: 0;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    font-size: 0;
-    /* Hide text */
-    display: flex;
-    align-items: center;
+  /* Compact Difficulty Row */
+  #difficulty-selection-restart {
+    flex-shrink: 0;
+    margin: 0;
+    gap: 0.5rem;
     justify-content: center;
   }
-
+  
+  #difficulty-selection-restart label {
+    padding: 2px 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  
+  #restart-btn {
+    flex-shrink: 0;
+    margin: 0;
+    width: auto; /* Allow full width text if needed, or compact */
+    padding: 5px 15px;
+    border-radius: 4px; /* Standard button */
+    font-size: 1rem; /* Show text */
+    height: 35px;
+  }
+  
   #restart-btn::after {
-    content: "";
-    /* Removed emoji */
     display: none;
   }
+}
 
-  .material-symbols-outlined {
-    vertical-align: middle;
-    font-size: 1.2em;
-    /* Adjust relative to text */
-  }
+/* General Leaderboard Improvements */
+#leaderboard {
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  #difficulty-selection-restart {
-    margin-top: 0.5rem;
-    font-size: 1rem;
-  }
+#leaderboard-list {
+  flex: 1; /* Takes available space */
+  overflow-y: auto;
+  min-height: 100px; /* Ensure at least some list is visible */
+  max-height: none; /* Remove fixed max-height, rely on flex */
+  margin-bottom: 10px;
 }

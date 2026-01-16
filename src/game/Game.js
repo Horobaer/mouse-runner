@@ -605,11 +605,17 @@ export default class Game {
             const diffIcon = diff === 'easy' ? '<span class="material-symbols-outlined">sentiment_satisfied</span>' : (diff === 'moderate' ? '<span class="material-symbols-outlined">sentiment_neutral</span>' : '<span class="material-symbols-outlined">sentiment_very_dissatisfied</span>');
 
             div.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span style="flex: 2; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px;">#${index + 1} ${diffIcon} <strong>${entry.name}</strong></span>
-                    <span style="flex: 1; text-align: center; display: flex; align-items: center; justify-content: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 1.1em;">stairs_2</span> ${lvl}</span>
-                    <span style="flex: 2; text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-                        <span class="material-symbols-outlined" style="font-size: 1.1em;">timer</span> ${entry.time}s | 🧀 ${cheese} | ❤️ ${hearts}
+                <div style="display: grid; grid-template-columns: 2fr 0.5fr 2.5fr; align-items: center; width: 100%; gap: 5px;">
+                    <span style="text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                        #${index + 1} ${diffIcon} <strong>${entry.name}</strong>
+                    </span>
+                    <span style="display: flex; align-items: center; justify-content: center; gap: 2px;">
+                        <span class="material-symbols-outlined" style="font-size: 1.0em;">stairs_2</span>${lvl}
+                    </span>
+                    <span style="display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: 0.95em;">
+                         <span style="min-width: 45px; text-align:right;">${entry.time}s</span>
+                         <span style="display:flex; align-items:center;">🧀 ${cheese}</span>
+                         <span style="display:flex; align-items:center;">❤️ ${hearts}</span>
                     </span>
                 </div>
             `;

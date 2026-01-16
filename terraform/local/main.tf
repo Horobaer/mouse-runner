@@ -18,7 +18,7 @@ resource "null_resource" "docker_build" {
 
   provisioner "local-exec" {
     # Build context is two levels up
-    command = "docker build -t mouse-runner-local ../../"
+    command = "docker build -t mouse-runner-local --progress=plain ../../"
     working_dir = "." 
   }
 }

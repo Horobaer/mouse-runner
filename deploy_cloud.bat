@@ -1,35 +1,31 @@
-echo Deploying Mouse Adventure to Google Cloud via Terraform...
-echo.
+@echo off
+echo Building and Deploying Mouse Adventure to Google Cloud Run...
 
-echo Setting gcloud project...
+REM 0. Set Project Context
+echo Setting active project to mouse-runner-481722...
 call gcloud config set project mouse-runner-481722
 if %errorlevel% neq 0 (
-    echo Error: Failed to set gcloud project.
-    pause
+    echo Failed to set project.
     exit /b 1
 )
 
-echo Changing directory to terraform/cloud...
-cd terraform\cloud
-
-echo Initializing Terraform...
-call terraform init
+REM 1. Build and Push Image
+echo.
+echo Step 1: Building container image...
+call gcloud builds submit --project=mouse-runner-481722 --tag us.gcr.io/mouse-runner-481722/mouse-adventure:latest .
 if %errorlevel% neq 0 (
-    echo Error: Terraform init failed.
-    pause
+    echo Build failed.
     exit /b 1
 )
+
+REM 2. Deploy with Terraform
+echo.
+echo Step 2: Deploying infrastructure...
+pushd terraform\cloud
+terraform init
+terraform apply -var="image_url=us.gcr.io/mouse-runner-481722/mouse-adventure:latest" -auto-approve
+popd
 
 echo.
-echo Applying Terraform Configuration...
-call terraform apply -auto-approve
-if %errorlevel% neq 0 (
-    echo Error: Terraform apply failed.
-    pause
-    exit /b 1
-)
-
-echo.
-echo Deployment Complete!
-echo You can see the service URL in the 'Outputs' above.
+echo Cloud deployment complete.
 pause

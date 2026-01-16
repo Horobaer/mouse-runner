@@ -12,16 +12,10 @@ provider "google" {
   region  = "us-central1"
 }
 
-# Build image using gcloud builds submit (offloading to cloud as per rules)
-resource "null_resource" "image_build" {
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-
-  provisioner "local-exec" {
-    # Build context is two levels up
-    command = "gcloud builds submit --tag gcr.io/mouse-runner-481722/mouse-runner ../../"
-  }
+variable "image_url" {
+  description = "The container image URL to deploy"
+  type        = string
+  default     = "us.gcr.io/mouse-runner-481722/mouse-adventure:latest"
 }
 
 resource "google_cloud_run_v2_service" "default" {
@@ -38,7 +32,7 @@ resource "google_cloud_run_v2_service" "default" {
     }
 
     containers {
-      image = "gcr.io/mouse-runner-481722/mouse-runner"
+      image = var.image_url
       
       resources {
         limits = {
@@ -51,13 +45,6 @@ resource "google_cloud_run_v2_service" "default" {
         container_port = 8080
       }
     }
-  }
-  
-  depends_on = [null_resource.image_build]
-  
-  # Force new deployment when build triggers
-  lifecycle {
-    replace_triggered_by = [null_resource.image_build]
   }
 }
 
