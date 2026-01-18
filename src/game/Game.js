@@ -58,6 +58,17 @@ export default class Game {
         this.started = false;
     }
 
+    resize(width, height) {
+        this.width = width;
+        this.height = height;
+        this.canvas.width = width;
+        this.canvas.height = height;
+        if (this.world) {
+            this.world.width = width;
+            this.world.height = height;
+        }
+    }
+
     start() {
         const startScreen = document.getElementById('start-screen');
         const startBtn = document.getElementById('start-btn');
@@ -462,15 +473,19 @@ export default class Game {
             cheeseEl.classList.remove('hidden');
         }
         const heartEl = document.getElementById('heart-count');
+        /* REMOVED: Heart count only for leaderboard now
         if (heartEl) {
             heartEl.innerText = '❤️ ' + this.heartsCollected;
             heartEl.classList.remove('hidden');
         }
+        */
+        if (heartEl) heartEl.classList.add('hidden'); // Ensure hidden
 
 
         const livesEl = document.getElementById('lives');
         if (livesEl) {
-            livesEl.innerHTML = '<span class="material-symbols-outlined">favorite</span>'.repeat(Math.max(0, this.lives));
+            // New Format: Icon + Number
+            livesEl.innerHTML = '<span class="material-symbols-outlined">favorite</span> ' + Math.max(0, this.lives);
         }
 
         // Draw Fireworks
@@ -639,11 +654,12 @@ export default class Game {
                     cursor: pointer;
                 `;
                 btn.onclick = () => {
-                    this.renderLeaderboardList(container); // Refresh without specific highlight logic overrides, 
-                    // but we need to pass the page. 
-                    // Actually, simpler: update dataset and re-call.
+                    // Update dataset to the new page
                     container.dataset.page = i;
-                    this.renderLeaderboardList(container, highlightIndex); // Keep highlight index known
+                    // Render without forcing highlight navigation (pass -1 for highlightIndex)
+                    // We can still highlight the row if it happens to be on this page, 
+                    // but we won't force the page to change back.
+                    this.renderLeaderboardList(container, highlightIndex);
                 };
                 paginationDiv.appendChild(btn);
             }

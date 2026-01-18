@@ -79,9 +79,9 @@ export default class Background {
         // Add layers
         // Sky is drawn in update loop of World or here, we can just fill rect.
 
-        this.layers.push(new Layer(game, this.width, this.height, 0.2, '#E0F7FA', 'clouds')); // Clouds
-        this.layers.push(new Layer(game, this.width, this.height, 0.1, '#B2EBF2', 'mountains')); // Mountains
-        this.layers.push(new Layer(game, this.width, this.height, 0.5, '#4DB6AC', 'hills')); // Hills
+        this.layers.push(new Layer(game, this.width, this.height, 0.2, '#FFEBEE', 'clouds')); // Clouds (Very Light Red)
+        this.layers.push(new Layer(game, this.width, this.height, 0.1, '#EF9A9A', 'mountains')); // Mountains (Light Red)
+        this.layers.push(new Layer(game, this.width, this.height, 0.5, '#C62828', 'hills')); // Hills (Dark Red)
     }
 
     update(speed) {
@@ -90,13 +90,14 @@ export default class Background {
 
     draw(context) {
         // Draw Sky based on Difficulty
-        let skyColor = '#E0F7FA'; // Default (Moderate)
+        // Draw Sky based on Difficulty
+        let skyColor = '#FF0000'; // Default (Moderate) - Red
         const difficulty = this.game.difficulty;
 
         if (difficulty === 'hard') {
-            skyColor = '#1a1a1a'; // Dark/Black for Hard
+            skyColor = '#8B0000'; // Dark Red for Hard
         } else if (difficulty === 'easy') {
-            skyColor = '#dcedc8'; // Light Green for Easy
+            skyColor = '#FFCDD2'; // Light Red for Easy
         }
 
         context.fillStyle = skyColor;

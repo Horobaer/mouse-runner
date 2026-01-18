@@ -174,13 +174,13 @@ export default class Player extends Entity {
         // --- DRAW CHEESE PARAGLIDER ---
         if (this.isGliding) {
             // ... (existing code for glider)
-            const canopyY = -100 * fatFactor;
+            const canopyY = -85 * fatFactor;
             const canopyWidth = 80 * fatFactor;
             const canopyHeight = 40 * fatFactor;
 
             // Strings
             context.strokeStyle = '#ecf0f1'; // White/Grey strings
-            context.lineWidth = 1.5;
+            context.lineWidth = 3;
             context.beginPath();
             // Left String
             context.moveTo(-10, -10); // From mouse back

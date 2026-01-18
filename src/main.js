@@ -2,9 +2,12 @@ import './style.css'
 import Game from './game/Game.js'
 
 const canvas = document.getElementById('gameCanvas');
-// 16:9 aspect ratio standard
-canvas.width = 1280;
-canvas.height = 720;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 const game = new Game(canvas);
+
+window.addEventListener('resize', () => {
+    game.resize(window.innerWidth, window.innerHeight);
+});
 game.start();
